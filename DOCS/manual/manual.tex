@@ -1,0 +1,132 @@
+\documentclass[aps,floatfix,noshowpacs,superscriptaddress]{revtex4}
+%\documentclass[preprint,pre,floatfix]{revtex4}
+%\usepackage{natbib}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{amsfonts}
+\usepackage[utf8]{inputenc}
+%\usepackage{multirow}
+\usepackage{color}
+\usepackage{cancel}
+\usepackage{hyperref}% add hypertext capabilities
+%\usepackage{epsfig}  
+%\usepackage[T1]{fontenc}
+%\usepackage[latin1]{inputenc} 
+%\usepackage[english]{babel}
+\graphicspath{{fig/}}
+%\graphicspath{{figures/}}
+
+
+%\newcommand{\blue}[1]{\hspace*{0mm} }
+\newcommand{\blue}[1]{\textcolor{blue}{[  #1 ]}}
+\newcommand{\red}[1]{\textcolor{red}{[  #1 ]}}
+\newcommand{\lf}{\left\langle}
+\newcommand{\rg}{\right\rangle}
+\newcommand{\ave}[1]{\left \langle #1 \right \rangle}
+
+\begin{document}
+
+\title{Origin Destination Multi Edge Network Package: Additional details on simulations}
+\author{O. Sagarra}
+\affiliation{Departament de F\'{\i}sica Fonamental, Universitat de Barcelona, 08028 Barcelona, Spain}
+%\author{F. Font-Clos}
+%\affiliation{Centre de Recerca Matem\`atica, Campus de Bellaterra, Edifici C - 08193 Bellaterra (Barcelona), Spain}
+%\affiliation{Departament de Matem\`atiques, Universitat Aut\`onoma de Barcelona, Edifici C - 08193 Bellaterra (Barcelona), Spain}
+
+
+\maketitle
+
+\section{Generation of synthetic networks on different ensembles}
+\label{app_simus}
+
+This document constitutes the manual for the \textbf{Origin Destination Multi Edge network Package} software (ODME), where details on the implementation of the different simulated ensembles are provided. For more details see \cite{Sagarra2013c}, \cite{Sagarra2014} and \cite{Supersampling}.
+
+
+%----------------------------------------------------------------------%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% NUMERICAL IMPLEMENTATION %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%----------------------------------------------------------------------%
+The code accompanying the present documents allows for the generation of both directed and undirected multi-edge networks (optionally including or excluding self-loops) in the various ensembles. In the following section a description of the simulation procedure for each ensemble is given. The code for simulating any ensemble can be downloaded from \cite{github}. It must be noted that all node related quantities computed are averaged only over the realizations where a given node exists ($s_i\neq 0$), since the probability for a node to have strength $0$ is not zero in the GC and Canonical (C) ensembles (albeit rapidly decreases with $\hat{s}$). 
+
+\section{Entropy based null models}
+\subsection{Linear constraints}
+
+All entropy based models with linear constraints on occupation numbers $\{t_{ij} \}$ are based on the normalized values of $p_{ij}$ which set the expected value of trips between nodes $i$ and $j$, $\langle t_{ij} \rangle = \hat{T}p_{ij}$ where $\hat{T}$ is the expected number of trips one wants to simulate.
+
+In the case of gravity like models, the average number of events reads,
+\[
+\langle t_{ij} \rangle = x_i y_j e^{-\gamma d_{ij}}
+\]
+which can also be converted to a "power-like" law performing the change $d_{ij} \to \ln d_{ij}$,
+\[
+\langle t_{ij} \rangle = \frac{x_i y_j}{d_{ij}^{\gamma}}.
+\]
+where $\{x,y\}$ are obtained solving the saddle point equations,
+\[
+\sum_j \langle t_{ij} \rangle = \hat{s}_i^{out} \qquad \sum_i \langle t_{ij} \rangle = \hat{s}_i^{in} \qquad \sum_ij \langle t_{ij} \rangle c_{ij} = \hat{C}.  
+\]
+It can also converge to a purely configuration model if $\gamma  = 0$, hence,
+\[
+\langle t_{ij} \rangle = x_i y_j = \frac{\hat{s}_i \hat{s}_j}{\hat{T}}.
+\]
+Other options are also possible, like fixing a subset of trips $\mathcal{Q}$ and applying any of the previous model to the complementary set $\bar{\mathcal{Q}}$,
+\[
+\langle t_{ij} \rangle = \left \{ \begin{array}{l l} 
+\hat{t}_{ij} & ij \in \mathcal{Q} \\
+x_i y_j e^{-\gamma c_{ij}} & \in \bar{\mathcal{Q}}
+\end{array} \right. .
+\]
+
+
+\subsubsection{Canonical Ensemble}
+For the canonical ensemble, the statistics of occupation numbers is multinomial with associated probabilities $p_{ij}$ and $\hat{T}$ events. 
+To avoid self-edges one can set $p_{ii} = 0 \, \forall i$. This method has a limited applicability with system size, since the generation of multinomial distributed variables is not independent and requires a large amount of memory, due to the fact that the occupation numbers generated are correlated,
+\begin{equation}
+\sigma_{t_{ij},t_{kl}} = \left \{ \begin{array}{l l} - Tp_{ij} p_{kl} & ij\neq kl \\ Tp_{ij} (1-p_{kl}) & ij=kl  \end{array} \right.
+\end{equation}
+
+\subsubsection{Grand Canonical Ensemble}
+The grand canonical ensemble can be implemented in two alternative yet equivalent approaches. One can generate a Poisson distributed number $\tau$ with mean $T$ and then generate a collection of occupation numbers $\{t_{ij}\}$ using a multinomial distribution of $\tau$ trials and probabilities $p_{ij}$ or alternatively one can generate a sequence of $L$ independent Poisson occupation numbers with mean $\langle t_{ij} \rangle = Tp_{ij}$. Both approaches are implemented, yet we recommend the latter approach to avoid memory overload problems (in this case the occupation numbers are independent and can be generated accordingly). The complexity of this algorithm scales with the number of possible states $L$. Note that in this case self-edges can be manually avoided by setting $\langle t_{ii} \rangle = 0$ (or equivalently $p_{ii} = 0$ ) $\, \forall i$.
+
+
+\subsubsection{Note on averages over existing edges}
+The results of the randomizer for the average weight of the links as a function of product of strengths or degrees are performed on the existing edges (files \textit{w-s-oi.hist}), hence,
+\[
+\bar{t} (\hat{s}_i,\hat{s}_j)= \ave{t | t>0 } = \frac{\ave{t}}{1-p(0)} = \frac{x_i(\hat{s}_i) y_j(\hat{s}_j)}{1-e^{-\hat{x}_i \hat{x}_j }}.
+\]
+
+
+
+\subsection{Linear and Binary constraints or only Binary constraints}
+
+In this case the resulting statistics for the occupation numbers are ZIP (zero inflated poisson processes) in the Grand Canonical Ensemble (which is the only one that can be developed analytically). The general form of a ZIP process is,
+\[
+p(t) = (1-\tilde{p}_{ij})^{1-\Theta(t_{ij})} \left(\frac{\tilde{p}_{ij}}{e^{\mu_{ij}} -1} \frac{\mu_{ij}^t}{t!} \right)^{\Theta(t_{ij})}
+\]
+And hence the simulations are done generating $L$ independent ZIP processes, one for each pair $ij$ in the following form:
+\begin{enumerate}
+\item Generate random number $R$, compute binary connection probability $\tilde{p}_{ij}$.
+\item If $R>\tilde{p}_{ij}$, $t_{ij}=0$. Else,
+\item Generate a Poisson process with mean $\mu_{ij}$ discarding the 0 values for $r$ repetitions.
+\item If at the end of $r$ repetitions, the Poisson process has not given any result different than 0, then $t_{ij}=0$. Else, keep the first non-zero value.
+\end{enumerate}
+
+\section{Non-entropy based null models}
+We have also implemented the radiation model \cite{Simini2012a} and the sequential gravity model \cite{Lenormand2012}.
+
+\subsection{Radiation Model}
+We have applied both the stochastic and multinomial versions of the model, introducing also the finite size correction term. All in all, the average number of trips between locations reads,
+\begin{equation}
+\langle t_{ij} \rangle = \frac{1}{1-\frac{s_i^{in}}{T}} \frac{s_i^{in} s_j^{in}}{(s_i^{in} + s_{ij})(s_i^{in} + s_j^{in} +s_{ij}) }
+\end{equation}
+where $s_{ij} = \sum_{j'|d_{ij'}<d_{ij}} s_{j'}^{out}$. The stochastic implementation of the radiation model is much slower than its multinomial counterpart.
+
+\subsection{Sequential gravity model}
+The sequential gravity model is also implemented, although this model has a slow convergence depending on the form of the strength sequence considered.
+
+
+\bibliographystyle{apsrev4-1}
+\bibliography{new_lib}
+\end{document}
+

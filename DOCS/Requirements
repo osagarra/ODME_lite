@@ -1,0 +1,12 @@
+Packages 1 and 3 (c code):
+
+	- c and c99 compiler (recommended gcc 4.7.2 for Linux while Clang for Apple)
+	- GSL-1.16 Libraries or newer
+
+Package 2 (python code):
+		- Numpy
+		- Scipy
+		- Numba (preferably numbapro)
+
+
+

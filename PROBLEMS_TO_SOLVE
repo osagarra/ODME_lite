@@ -1,0 +1,19 @@
+3. Network generator    
+
+
+        -- Radiation -> Works, but not properly defined if s_in == 0 [say in README or change formula]
+
+
+### Detected problems ##
+Case 0:
+    Doubts still on Radiation (change formula?) and on Seq. Gravity
+Case 1:
+    All good!
+Case 2:
+    All good!
+Case 3:
+    All good!
+Case 4:
+    All good!
+Case 5:
+    All good (seems to be)!

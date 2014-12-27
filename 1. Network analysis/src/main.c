@@ -1,0 +1,210 @@
+/********************************************************************************
+ * 
+ * Network analyzer
+ * 
+ * Author: Oleguer Sagarra, 2014.
+ * 
+ * 
+ *	Output:
+ *		
+ *		*.hist: Diverse statistics on the network (indicative names on the files)
+ *		*.list: Node attributes average with average deviation (see files).
+ * 
+ * ******************************************************************************/
+
+
+
+#include <stdio.h>
+#include <math.h>
+#include "main.h"
+
+
+int main(int argc, char *argv[]){
+	
+	printf(\
+	"################################\n"
+	"########## Multi-Edge Analyzer ###########\n"
+	"####################################\n");
+ /***********************************************************************
+	 we read the parameters and initialize the random generator	 N_nodes, Reps, Seed, s_sequence file, d_file),
+ ************************************************************************/
+	int  	N_nodes=-1	;
+	char* file_s;
+	char* file_d;
+	int opt_dist = 0;
+	int  	seed=1;      			
+    int opt_dir=-1;			
+    double bin_exp = -1;				
+	int verbose	= 0;				
+	int opt_clust = 0;			
+	int self_opt = 1;
+	int header=1;
+	double dmax = 20000;
+	int opt_log		= 0; // logarithmic option
+	
+	int ch;
+	        while ((ch = getopt(argc, argv, "N:s:d:f:a:x:v:c:l:h:m:z:L:")) != -1) {
+	             switch (ch) {
+				 case 'z': /*distance analysis */
+				 		 opt_dist=atoi(optarg);
+						 break;
+	             case 's': /* seed */
+	                     seed=atoi(optarg);
+	                     break;
+			     case 'N': /* N_nodes */
+			             N_nodes=atoi(optarg);
+			             break;
+	             case 'd': /* dir_opt */
+	                     opt_dir=atoi(optarg);
+	                     break;
+	             case 'f': /* file adj */
+	                     file_s=optarg;
+	                     break;
+			     case 'a': /* file Dist */
+				 		 //opt_dist=1;
+			             file_d=optarg;
+			             break;
+	             case 'x': /* exp */
+	                     bin_exp=atof(optarg);
+	                     break;
+			     case 'v': /* verbose */
+			             verbose=atoi(optarg);
+			             break;
+			     case 'c': /* clust */
+			             opt_clust=atoi(optarg);
+			             break;
+			     case 'l': /* self loop */
+			             self_opt=atoi(optarg);
+			             break;
+				case 'h': /* self loop */
+					     header=atoi(optarg);
+					     break;
+				case 'm': /* max_Distance */
+						 dmax = atof(optarg);
+						 break;
+		 		case 'L': /* Log opt */
+		 				 opt_log=atoi(optarg);
+		 				 break;
+		
+	             default:
+				 {
+	                     printf("Unknown flag %c\n", ch);
+	                     exit(EXIT_FAILURE);
+	             }
+	}
+	}
+	if(opt_log>0)
+	{
+		dmax = log(dmax);
+	}
+
+	if((N_nodes<0)||(opt_dir<0))
+	{
+ 		fprintf(stderr,	"\nCorrect usage is: ./simus -args \n\nWhere:\n\n"
+ 				" *  Compulosry items:\n"
+ 				" *		-N N_nodes. Number of nodes (int)\n"
+ 				" *		-d dir_opt. Undirected (0) or Directed (1)\n"
+ 			    " *		-f file_adj Path to file with adj format node_i node_j t_ij\n"
+ 				" *  Optional items: \n"				
+				" *		-z Distance_option: Include distances in analysis? [default=0, 1 for yes]\n"
+	 			" *		-a file_dist Path to distance list in format node_i node_j d_ij [default, no distance]\n"
+ 				" *		-s seed.initial seed for random generator (int) (default=1)\n"
+ 				" *		-x Exponent for log-binning (-1 for no log binning) (Default=-1)\n"
+ 				" *		-v Verbose (1 for on, 0 for off) (Default 0)\n"
+ 				" *		-c Clustering option (1 for yes) (warning: Depending on av_s makes simulations orders of magnitude slower) (Default=0)\n"
+ 				" *		-l Self-loop option (>0 for accepting them) (Default =1) \n"
+				" *		-h Number of header lines in input files (default=1)\n"
+				" *		-m Maximum distance for binning (default= 20000) [in meters]\n"
+				" *		-L Log-dist option (to compute the logarithm of the cost matrix) [default=0]\n\n"
+ 				"Please, read the DOCS/README file for more info!\n");
+ 		return 0;
+ 	}
+	/****** Check all in params are good ******/
+	if(opt_dist>0)
+	{
+		printf("Distance given, spatial network analysis...\n");
+	}else
+	{
+		printf("No distance given, regular network analysis...\n");		
+	}
+	if(bin_exp<=1) bin_exp=1.05;
+    if((opt_dir!=1)&&(opt_dir!=0))
+    {
+		printf("Select directed or undirected!, aborting...\n");
+		abort();
+	}
+	if(opt_clust==1)
+	{
+		if(opt_dir==1)
+		{
+			printf("Ignoring clustering option, only defined for undirected networks ....\n");
+			opt_clust=0;
+		}else{
+			printf("CLustering option selected! This may cause low performance for high <s>! ....\n");
+		}
+	}
+  /*** Set rand generator (uses GLS THAU) ***/ 
+	if(seed==1)
+	{
+		seed = seed + time(NULL); // Change for trully random generation
+		if(verbose>1) printf("Default seed given, using processor time...\n");
+	}
+	gsl_rng * randgsl = gsl_rng_alloc(gsl_rng_taus);	/// we initialize the random generator of the gsl
+	gsl_rng_set(randgsl,seed);
+
+ /*** Print some info ***/
+	//printf("SEED=%i\n",seed);
+	//printf("Iterations=%i\n",Reps);
+
+
+	double** dist;
+	double av_k;
+	int* xx;
+	int** xx2;
+	int T;
+ /***********************************************************************
+ 	Allocating memory + reading distro
+ ************************************************************************/ 	
+	if(opt_dist>0)
+	{
+		dist = read_distances(file_d,N_nodes,header,opt_log);
+	}
+	W_GRAPH* WG = w_graph_dist_read_edge_list(file_s, N_nodes, opt_dir,header);
+	xx2 = w_graph_compute_s(WG, N_nodes);
+	T = w_graph_total_weight(WG, N_nodes);
+	av_k=(double)T/(double)N_nodes;
+
+	//Tfake = (long int)T;
+	if(verbose==1)
+	{
+		if(opt_dir==1)
+		{
+			printf("-  x_max/X : (out) =%lf (in) %lf\n",max_value_int(xx2[0],N_nodes)/(double)T, max_value_int(xx2[1],N_nodes)/(double)T );
+		}else{
+			xx = xx2[0];
+			printf("-  x_max/X = %lf\n",max_value_int(xx,N_nodes)/(double)T );
+		}
+	}
+/***********************************************************************
+	Analizing network
+ ************************************************************************/ 	
+	int w_max;
+	//int s_min;
+	int E;
+	int * w = w_graph_compute_w(WG, N_nodes, &E, -1);
+	w_max= max_value_int(w,E);
+	printf("-- wmax for histogram: %d\n",w_max);
+	/// extended stats with distance ////
+	if (verbose>0) printf("... Graph stats ... \n");
+	if (opt_dist>0)
+	{
+		w_graph_dist_all_stats(WG, N_nodes, 0,  bin_exp, av_k, opt_dir, self_opt,dist,randgsl,dmax);
+	}else{
+		w_graph_all_stats(WG, N_nodes, 0, bin_exp, av_k, opt_dir, self_opt, 0);
+	}
+	if (verbose>0) printf("... Node stats ... \n");
+	w_graph_node_stats_list(WG,N_nodes,0, av_k, opt_dir, opt_clust, self_opt);
+	printf("# Multi-Edge Net entropy: %f\n",w_graph_entropy(WG,N_nodes));
+	w_graph_free_nodes(WG, N_nodes);
+	free(WG);
+}

@@ -1,0 +1,12 @@
+setup.py
+multi_edge_fitter/__init__.py
+multi_edge_fitter/fitter_E.py
+multi_edge_fitter/fitter_grav.py
+multi_edge_fitter/fitter_k.py
+multi_edge_fitter/fitter_pij.py
+multi_edge_fitter/fitter_s.py
+multi_edge_fitter/fitter_sk.py
+multi_edge_fitter.egg-info/PKG-INFO
+multi_edge_fitter.egg-info/SOURCES.txt
+multi_edge_fitter.egg-info/dependency_links.txt
+multi_edge_fitter.egg-info/top_level.txt
