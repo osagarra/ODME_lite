@@ -18,15 +18,16 @@ except OSError:
 ######## Inputs ########
 #########################
 ## Import strength and degree sequence ##
-s_list= np.genfromtxt('../../tests/strengths2.str',skiprows=1) # Incoming and outgoing strength
-sout = s_list.T[-2]
+s_list= np.genfromtxt('../../tests/strengths3.str',skiprows=1) # Incoming and outgoing strength
+#sout = s_list.T[-2]
+sout = s_list.T[-1]
 sin = s_list.T[-1]
-k_list = np.genfromtxt('../../tests/degrees2.str',skiprows=1) # Incoming and outgoing degree
-kout = k_list.T[-2]
+k_list = np.genfromtxt('../../tests/degrees3.str',skiprows=1) # Incoming and outgoing degree
+#kout = k_list.T[-2]
+kout = k_list.T[-1]
 kin = k_list.T[-1]
 T = sout.sum()
 N = len(kout)
-
 
 x = sout/np.sqrt(T)
 y = sin/np.sqrt(T)
@@ -38,24 +39,24 @@ w = np.ones(N)
 for selfs in [False,True]:
 
 
-############################
-######## Approach 1: Iterative fitting ########
-###########################
+    ############################
+    ######## Approach 1: Iterative fitting ########
+    ###########################
     """
     Preferred approach, convergence not guaranteed but good performance
     """
     tol_ini = 1e-12
     # Tolerance set very high (s-<s> < 10) due to convergence issues...
-    x,y,z,w = mw.fitter_sk.balance_xyzw(sin,sout,kin,kout,tol=tol_ini,verbose=True,print_tol=True, 
-        print_c=True, maxreps = 1e6, tol_c = 10, x_ini = x, y_ini = y, z_ini = z, w_ini = w)
+    x,y,z,w = mw.fitter_sk.balance_xyzw(sin,sout,kin,kout,tol=tol_ini,verbose=True,print_tol=False, 
+        print_c=True, maxreps = 1e6, tol_c = 1e-1, x_ini = x, y_ini = y, z_ini = z, w_ini = w,selfs=selfs)
     # fine tunning #
-    z,w = mw.fitter_sk.balance_zw(x,y,kin,kout,tol_ini,print_tol=True,z_ini=z,w_ini=w) # fix degrees (can be done independently)
+    #z,w = mw.fitter_sk.balance_zw(x,y,kin,kout,tol_ini,print_tol=True,z_ini=z,w_ini=w,selfs=selfs) # fix degrees (can be done independently)
     lags = np.array([range(len(x)),x,y,z,w])
 
 
-#########################
-######## Outputs ########
-#########################
+    #########################
+    ######## Outputs ########
+    #########################
 
     if selfs:
         name = pref+'/fixedsk.xyzw'

@@ -30,7 +30,7 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
             Kin: Incoming degree sequence (N)
             Kout: Outgoing degree sequence (N)
             tol: Maximum iteration tolerance [float]
-            tol_c: Maximum tolerance equations [float]
+            tol_c: Maximum tolerance permitted for the worse constraint-equation [float]
             Maxreps: Maximum number of iterations [float]
             Verbose [Bool]
             Selfs: Allow self loops? [True for yes]
@@ -44,13 +44,23 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
     if verbose or print_tol:
 		print "#### Degree & Strength balancer #####"
     n = len(sin)
+    if n>1000:
+        act = 10
+    elif n<1000 and n>500:
+        act = 50
+    else:
+        act = 500
     T = sout.sum()
+    alf = np.sqrt(sout.max()*sin.max()/T)
     #a=kwargs.get('x_ini',sout/np.sqrt(T))
     #b=kwargs.get('y_ini',sin/np.sqrt(T))
     a=kwargs.get('x_ini',np.ones(n)*0.9)
     b=kwargs.get('y_ini',np.ones(n)*0.9)
-    c=kwargs.get('x_ini',np.ones(n)*0.9)
-    d=kwargs.get('y_ini',np.ones(n)*0.9)
+    c=kwargs.get('z_ini',np.ones(n)*0.9)
+    d=kwargs.get('w_ini',np.ones(n)*0.9)
+    if 'x_ini' in kwargs.keys() or 'y_ini' in kwargs.keys():
+        a = a*alf
+        b = b*alf
     #c=kwargs.get('w_ini',sout)
     #d=kwargs.get('z_ini',sin)
     #c=kwargs.get('z_ini',np.ones(n)*0.9)
@@ -62,38 +72,37 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
 	#	d=kwargs['w_ini']
     inds_in = np.where(sin==0)
     inds_out = np.where(sout==0)
-    b[inds_in]=0
-    d[inds_in]=0
-    c[inds_out]=0
     a[inds_out]=0
+    b[inds_in]=0
+    c[inds_out]=0
+    d[inds_in]=0
     afake = a
     bfake = b
     cfake = c
     dfake = d
     reps = 0
-
-    delta_k=dist_check_k(a,b,c,d,kout,kin,selfs)
-    delta_s=dist_check_k(a,b,c,d,sout,sin,selfs)
+    delta_k=dist_check_k(a/alf,b/alf,c,d,kout,kin,selfs)
+    delta_s=dist_check_k(a/alf,b/alf,c,d,sout,sin,selfs)
     print "### Fixing s,k ###"
     print "Initial errors | S_in grad:%f S_out grad:%f K_in:%f K_out:%f " % (delta_s[1],delta_s[0],delta_k[1],delta_k[0])
     if np.max(np.abs(delta_k)) < tol_c or np.max(np.abs(delta_k))<tol_c:
         return a,b,c,d
     if not selfs:
         while True:
-            aux = np.exp(np.einsum('i,j',a,b))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
             aux2 = np.einsum('i,j',c,d)
             #strengths
-            b = sin/(d*np.einsum('i,ij',a*c,aux/(aux2*(aux-1.)+1.)) - d*np.einsum('i,i->i',a*c,np.exp(a*b)/(c*d*(np.exp(a*b)-1.)+1.)))
+            b = sin*(alf*alf)/(d*np.einsum('i,ij',a*c,aux/(aux2*(aux-1.)+1.)) - d*np.einsum('i,i->i',a*c,np.exp(a/alf*b/alf)/(c*d*(np.exp(a/alf*b/alf)-1.)+1.)))
             b[inds_in]=0
-            aux = np.exp(np.einsum('i,j',a,b))
-            a = sout/(c*np.einsum('j,ij',b*d,aux/(aux2*(aux-1.)+1.)) - c*np.einsum('j,j->j',b*d,np.exp(a*b)/(c*d*(np.exp(a*b)-1.)+1.)))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            a = sout*(alf*alf)/(c*np.einsum('j,ij',b*d,aux/(aux2*(aux-1.)+1.)) - c*np.einsum('j,j->j',b*d,np.exp(a/alf*b/alf)/(c*d*(np.exp(a/alf*b/alf)-1.)+1.)))
             a[inds_out]=0
-            aux = np.exp(np.einsum('i,j',a,b))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
             #degrees
-            d = kin/( np.einsum('i,ij',c,(aux-1.)/(aux2*(aux-1.)+1.)) - np.einsum('i,i->i',c,(np.exp(a*b)-1.)/(c*d*(np.exp(a*b)-1.)+1.)))
+            d = kin/( np.einsum('i,ij',c,(aux-1.)/(aux2*(aux-1.)+1.)) - np.einsum('i,i->i',c,(np.exp(a/alf*b/alf)-1.)/(c*d*(np.exp(a/alf*b/alf)-1.)+1.)))
             d[inds_in]=0
             aux2 = np.einsum('i,j',c,d)
-            c = kout/( np.einsum('j,ij',d,(aux-1.)/(aux2*(aux-1.)+1.)) - np.einsum('j,j->j',d,(np.exp(a*b)-1.)/(c*d*(np.exp(a*b)-1.)+1.)))
+            c = kout/( np.einsum('j,ij',d,(aux-1.)/(aux2*(aux-1.)+1.)) - np.einsum('j,j->j',d,(np.exp(a/alf*b/alf)-1.)/(c*d*(np.exp(a/alf*b/alf)-1.)+1.)))
             c[inds_out]=0
             #if reps>10:
             tola = np.max(np.abs(afake-a))
@@ -102,9 +111,9 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
             told = np.max(np.abs(dfake-d))
             if print_tol: 
 				print "Delta_x:%r Delta_y:%r Delta_z:%r Delta_w:%r" % (tola,tolb,tolc,told)
-            if print_c and reps%10==0:
-				da,db = dist_check_s(a,b,c,d,sout,sin,selfs)
-				dc,dd = dist_check_k(a,b,c,d,kout,kin,selfs)
+            if print_c and reps%act==0:
+				da,db = dist_check_s(a/alf,b/alf,c,d,sout,sin,selfs)
+				dc,dd = dist_check_k(a/alf,b/alf,c,d,kout,kin,selfs)
 				if np.abs(da) < tol_c and np.abs(dc) < tol_c:
 					if verbose:
 						print "took %d reps, tola :%f, tolb:%f, tolc :%f, told:%f" % (reps,tola,tolb,tolc,told)
@@ -117,6 +126,8 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
             if reps>maxreps:
                 print "Algorithm did not converge after %d reps" % maxreps
                 break
+            if not all(np.isfinite(a)) or not all(np.isfinite(b)) or not all(np.isfinite(c)) or not all(np.isfinite(d)):
+                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
             afake = a
             bfake = b
             cfake = c
@@ -125,15 +136,15 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
 		#raise NotImplementedError("Feature not implemented")
     else:
         while True:
-            aux = np.exp(np.einsum('i,j',a,b))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
             aux2 = np.einsum('i,j',c,d)
             #strengths
-            b = sin/(d*np.einsum('i,ij',a*c,aux/(aux2*(aux-1.)+1.)))
+            b = sin*(alf*alf)/(d*np.einsum('i,ij',a*c,aux/(aux2*(aux-1.)+1.)))
             b[inds_in]=0
-            aux = np.exp(np.einsum('i,j',a,b))
-            a = sout/(c*np.einsum('j,ij',b*d,aux/(aux2*(aux-1.)+1.)))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            a = sout*(alf*alf)/(c*np.einsum('j,ij',b*d,aux/(aux2*(aux-1.)+1.)))
             a[inds_out]=0
-            aux = np.exp(np.einsum('i,j',a,b))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
             #degrees
             d = kin/np.einsum('i,ij',c,(aux-1.)/(aux2*(aux-1.)+1.))
             d[inds_in]=0
@@ -147,9 +158,9 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
             told = np.max(np.abs(dfake-d))
             if print_tol: 
 				print "Delta_x:%r Delta_y:%r Delta_z:%r Delta_w:%r" % (tola,tolb,tolc,told)
-            if print_c and reps%10==0:
-				da,db = dist_check_s(a,b,c,d,sout,sin)
-				dc,dd = dist_check_k(a,b,c,d,kout,kin)
+            if print_c and reps%act==0:
+				da,db = dist_check_s(a/alf,b/alf,c,d,sout,sin)
+				dc,dd = dist_check_k(a/alf,b/alf,c,d,kout,kin)
 				if np.abs(da) < tol_c and np.abs(dc) < tol_c:
 					if verbose:
 						print "took %d reps, tola :%f, tolb:%f, tolc :%f, told:%f" % (reps,tola,tolb,tolc,told)
@@ -162,12 +173,14 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
             if reps>maxreps:
                 print "Algorithm did not converge after %d reps" % maxreps
                 break
+            if not all(np.isfinite(a)) or not all(np.isfinite(b)) or not all(np.isfinite(c)) or not all(np.isfinite(d)):
+                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
             afake = a
             bfake = b
             cfake = c
             dfake = d
             reps +=1
-    return a,b,c,d
+    return a/alf,b/alf,c,d
 
 
 
@@ -229,6 +242,8 @@ def balance_zw(x,y,kin,kout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,prin
             if reps>maxreps:
                 print "Algorithm did not converge after %d reps" % maxreps
                 break
+            if not all(np.isfinite(c)) or not all(np.isfinite(d)):
+                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
             cfake = c
             dfake = d
             reps +=1
@@ -254,8 +269,12 @@ def balance_xy(z,w,sin,sout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,prin
     if verbose or print_tol:
 		print "#### Strength balancer #####"
     n = len(sin)
+    alf = np.sqrt(sout.max()*sin.max()/sout.sum())
     a=kwargs.get('x_ini',sout/np.sqrt(T))
     b=kwargs.get('y_ini',sin/np.sqrt(T))
+    if 'x_ini' in kwargs.keys() or 'y_ini' in kwargs.keys():
+        a = alf*a
+        b = alf*b
     inds_in = np.where(sin==0)
     inds_out = np.where(sout==0)
     a[inds_out]=0
@@ -268,11 +287,11 @@ def balance_xy(z,w,sin,sout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,prin
 		raise NotImplementedError("Feature not implemented")
     else:
         while True:
-            aux = np.exp(np.einsum('i,j',a,b))
-            b = sin/(w*np.einsum('i,ij',a*z,aux/(aux2*(aux-1.)+1.)))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            b = sin*(alf*alf)/(w*np.einsum('i,ij',a*z,aux/(aux2*(aux-1.)+1.)))
             b[inds_in]=0
-            aux = np.exp(np.einsum('i,j',a,b))
-            a = sout/(z*np.einsum('j,ij',b*w,aux/(aux2*(aux-1.)+1.)))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            a = sout*(alf*alf)/(z*np.einsum('j,ij',b*w,aux/(aux2*(aux-1.)+1.)))
             a[inds_out]=0
             tola = np.max(np.abs(afake-a))
             tolb = np.max(np.abs(bfake-b))
@@ -284,10 +303,12 @@ def balance_xy(z,w,sin,sout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,prin
             if reps>maxreps:
                 print "Algorithm did not converge after %d reps" % maxreps
                 break
+            if not all(np.isfinite(a)) or not all(np.isfinite(b)):
+                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
             afake = a
             bfake = b
             reps +=1
-    return a,b
+    return a/alf,b/alf
 
 
 def balance_xy_zw(sin,sout,kin,kout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,print_tol=False,**kwargs):
@@ -342,6 +363,8 @@ def balance_xy_zw(sin,sout,kin,kout,tol=1e-9,maxreps=10000,verbose=False,selfs=T
             if reps>maxreps:
                 print "Algorithm did not converge after %d reps" % maxreps
                 break
+            if not all(np.isfinite(a)) or not all(np.isfinite(b)) or not all(np.isfinite(c)) or not all(np.isfinite(d)):
+                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
             afake = a
             bfake = b
             cfake = c

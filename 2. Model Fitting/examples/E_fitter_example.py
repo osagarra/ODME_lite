@@ -29,6 +29,7 @@ kin = k_list.T[-1]
 E=kout.sum() # Number of edges
 N=len(sout) # Number of nodes
 T=sin.sum() # Number of events 
+alf = np.sqrt(sout.max()*sin.max()/T)
 
 for selfs in [False,True]:
 
@@ -50,7 +51,7 @@ for selfs in [False,True]:
     lam = E/T
     tol_ini = 1e-2
     x,y,lam = mw.fitter_E.fit_lambda(sin,sout,E,tol_gamma=tol_ini,tol_s=1e-8,verbose=True,
-        lambda_ini=lam,x_ini=x,y_ini=y,print_tol=True,lambda_min=0.1,selfs=selfs)
+        lambda_ini=lam,x_ini=x,y_ini=y,print_tol=False,lambda_min=0.1,selfs=selfs)
     delta0 = 10*tol_ini
     x,y,lam = mw.fitter_E.fit_lambda(sin,sout,E,tol_gamma=1e-9,tol_s=1e-9,verbose=True,
         lambda_ini=lam,x_ini=x,y_ini=y,print_tol=True,lambda_min=0.001,delta0=delta0,selfs=selfs) 

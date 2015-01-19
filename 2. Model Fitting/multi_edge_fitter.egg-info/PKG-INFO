@@ -53,8 +53,9 @@ Description: Origin-Destination Multi-Edge Package. Module 2: Multi Edge Fitter
         	1. FIxing the strength sequence (incoming and outgoing) and an average trip cost constraint.
         	2. Fixing the strength sequence and some individual trip entries t_{ij}.
         	3. Fixing the strength sequence and the total number of binary edges.
-        	4. Fixing the degree sequence.
-        	5. Fixing the degree and strength sequence.
+        	4. Fixing the degree and strength sequence.
+        	5. Fixing the degree sequence.
+        
         	
         It allows for considering self loops or not.
         	
@@ -91,17 +92,18 @@ Description: Origin-Destination Multi-Edge Package. Module 2: Multi Edge Fitter
         			Outgoing strength sequence [array of length N number of nodes]
         			Total number of binary edges (E) [float].
         		In this case it uses a custom class or the function fit_lambda. Returns sets of lagrange multipliers x,y,lambda (Lagrange multipliers such that <t_{ij}> = lam* x y exp(xy) / (lam*(exp(xy)-1)+1) )
-        	4. Uses fitter_k.py
-        		Inputs:
-        			Incoming and outgoing degree [array of lenght N number of nodes]
-        		Relevant function to use from the package:
-        			balance_xy --> Returns x,y (lagrange multipliers such that <t_{ij}> = xy/(1+xy))
-        	5. Uses fitter_sk.py
+        	4. Uses fitter_sk.py
         		Inputs:
         			Incoming strength sequence [array of length N number of nodes] 
         			Outgoing strength sequence [array of length N number of nodes]
         		Relevant function to use from the package:
         			balance_xyzw --> Returns x,y,z,w (lagrange multipliers such that <t_{ij}> = x y lam* zw exp(zw) / (x y lam*(exp(zw)-1)+1) )
+                (Note: This particular algorithm is the most unstable, convergence not guaranteed)
+        	5. Uses fitter_k.py
+        		Inputs:
+        			Incoming and outgoing degree [array of lenght N number of nodes]
+        		Relevant function to use from the package:
+        			balance_xy --> Returns x,y (lagrange multipliers such that <t_{ij}> = xy/(1+xy))
         
         All the functions are fully documented. Some examples are provided in folder "examples".
         

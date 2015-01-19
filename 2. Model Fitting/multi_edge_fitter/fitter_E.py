@@ -34,12 +34,18 @@ def balance_xy(lam,sin,sout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,prin
                 x_ini: Initial guess for x
                 y_ini: Initial guess for y
     """
+    # options
     if lam<=0:
         raise ValueError("Lambda must be positive")
     n = len(sin)
     T = sout.sum()
     a=kwargs.get('x_ini',sout/np.sqrt(T))
     b=kwargs.get('y_ini',sin/np.sqrt(T))
+    alf = np.sqrt(sout.max()*sin.max()*1./sout.sum()) # constant to avoid overflow
+    if 'x_ini' in kwargs.keys() or 'y_ini' in kwargs.keys():
+        a = a*alf
+        b = b*alf
+    # pre - conditioning
     inds_in = np.where(sin==0)
     inds_out = np.where(sout==0)
     afake = a
@@ -47,11 +53,13 @@ def balance_xy(lam,sin,sout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,prin
     reps = 0
     if not selfs:
         while True:
-            aux = np.exp(np.einsum('i,j',a,b))
-            b = sin/(np.einsum('i,ij',lam*a,aux/(lam*(aux-1)+1))-lam*a*np.exp(a*b)/(lam*(np.exp(a*b)-1)+1))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            b = sin/(np.einsum('i,ij',lam*a/(alf*alf),aux/(lam*(aux-1)+1))-lam*a/(alf*alf)*np.exp(a/alf*b/alf)/(lam*
+                (np.exp(a/alf*b/alf)-1)+1))
             #np.einsum('i,ii->i',lam*a,aux/(lam*(aux-1)+1)))
-            aux = np.exp(np.einsum('i,j',a,b))
-            a = sout/(np.einsum('j,ij',lam*b,aux/(lam*(aux-1)+1))-lam*b*np.exp(a*b)/(lam*(np.exp(a*b)-1)+1))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            a = sout/(np.einsum('j,ij',lam*b/(alf*alf),aux/(lam*(aux-1)+1))-lam*b/(alf*alf)*np.exp(a/alf*b/alf)/(lam*
+                (np.exp(a/alf*b/alf)-1)+1))
             #np.einsum('j,jj->j',lam*b,aux/(lam*(aux-1)+1)))
             a[inds_out]=0
             b[inds_in]=0
@@ -66,16 +74,18 @@ def balance_xy(lam,sin,sout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,prin
             if reps>maxreps:
                 print "Algorithm did not converge after %d reps" % maxreps
                 break
+            if not all(np.isfinite(a)) or not all(np.isfinite(b)):
+                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
             afake = a
             bfake = b
             reps +=1
     else:
         while True:
-            aux = np.exp(np.einsum('i,j',a,b))
-            b = sin/(np.einsum('i,ij',lam*a,aux/(lam*(aux-1)+1)))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            b = sin/(np.einsum('i,ij',lam*a/(alf*alf),aux/(lam*(aux-1)+1)))
             b[inds_in]=0
-            aux = np.exp(np.einsum('i,j',a,b))
-            a = sout/(np.einsum('j,ij',lam*b,aux/(lam*(aux-1)+1)))
+            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            a = sout/(np.einsum('j,ij',lam*b/(alf*alf),aux/(lam*(aux-1)+1)))
             a[inds_out]=0
             b[inds_in]=0
             #if reps>10:
@@ -89,10 +99,12 @@ def balance_xy(lam,sin,sout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,prin
             if reps>maxreps:
                 print "Algorithm did not converge after %d reps" % maxreps
                 break
+            if not all(np.isfinite(a)) or not all(np.isfinite(b)):
+                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
             afake = a
             bfake = b
             reps +=1
-    return a,b
+    return a/alf,b/alf
      
 ##############################     
 
@@ -217,7 +229,6 @@ def dist_check_E(x,y,lam,E,selfs=True):
         extra1=0
     delta_E = E- lam*np.einsum('ij->',(xy_exp-1)/(lam*(xy_exp-1)+1)) + extra1
     return delta_E
-
 
 
 
