@@ -53,13 +53,11 @@ def balance_xy(lam,sin,sout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,prin
     reps = 0
     if not selfs:
         while True:
-            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
-            b = sin/(np.einsum('i,ij',lam*a/(alf*alf),aux/(lam*(aux-1)+1))-lam*a/(alf*alf)*np.exp(a/alf*b/alf)/(lam*
-                (np.exp(a/alf*b/alf)-1)+1))
+            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
+            b = sin*(alf*alf) /(np.einsum('i,ij',lam*a,1./(lam*(1.-aux)+aux))-lam*a/(lam*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf)))
             #np.einsum('i,ii->i',lam*a,aux/(lam*(aux-1)+1)))
-            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
-            a = sout/(np.einsum('j,ij',lam*b/(alf*alf),aux/(lam*(aux-1)+1))-lam*b/(alf*alf)*np.exp(a/alf*b/alf)/(lam*
-                (np.exp(a/alf*b/alf)-1)+1))
+            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
+            a = sout*(alf*alf)/(np.einsum('j,ij',lam*b,1./(lam*(1.-aux)+aux))-lam*b/(lam*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf)))
             #np.einsum('j,jj->j',lam*b,aux/(lam*(aux-1)+1)))
             a[inds_out]=0
             b[inds_in]=0
@@ -81,11 +79,12 @@ def balance_xy(lam,sin,sout,tol=1e-9,maxreps=10000,verbose=False,selfs=True,prin
             reps +=1
     else:
         while True:
-            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
-            b = sin/(np.einsum('i,ij',lam*a/(alf*alf),aux/(lam*(aux-1)+1)))
-            b[inds_in]=0
-            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
-            a = sout/(np.einsum('j,ij',lam*b/(alf*alf),aux/(lam*(aux-1)+1)))
+            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
+            b = sin*(alf*alf) /(np.einsum('i,ij',lam*a,1./(lam*(1.-aux)+aux)))
+            #np.einsum('i,ii->i',lam*a,aux/(lam*(aux-1)+1)))
+            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
+            a = sout*(alf*alf)/(np.einsum('j,ij',lam*b,1./(lam*(1.-aux)+aux)))
+            #np.einsum('j,jj->j',lam*b,aux/(lam*(aux-1)+1)))
             a[inds_out]=0
             b[inds_in]=0
             #if reps>10:
@@ -198,19 +197,19 @@ def fit_lambda(sin,sout,E,tol_s=1e-9,tol_gamma=1e-5,maxreps=1000,max_rej=100,fac
 
 def dist_check_s(x,y,lam,sout,sin,selfs=True):
     """
-        Computes distance between prediction and reality for strengths
+        Computes absolute distance between prediction and reality for strengths
         x,y --> arrays of lagrange multpliers (kength N)
         lam --> Float, lagrange multiplier associated with number of binary edges
         sout,sin -- > real degree sequences (length N)
         self: True for self loops
     """
-    xy_exp = np.exp(np.einsum('i,j',x,y))
+    xy_exp = np.exp(-np.einsum('i,j',x,y))
     if not selfs:
-        extra1 = lam*x*y*np.exp(x*y)/(lam*(np.exp(x*y)-1.)+1.) # diagonal
+        extra1 = lam*x*y/(lam*(1.-np.exp(-x*y))+np.exp(-x*y)) # diagonal
     else:
         extra1=0
-    delta_x = sout - x*lam*np.einsum('j,ij',y,xy_exp/(lam*(xy_exp-1.)+1.)) + extra1
-    delta_y = sin - y*lam*np.einsum('i,ij',x,xy_exp/(lam*(xy_exp-1.)+1.)) +  extra1
+    delta_x = np.abs(sout - x*lam*np.einsum('j,ij',y,1./(lam*(1.-xy_exp)+xy_exp)) + extra1)
+    delta_y = np.abs(sin  - y*lam*np.einsum('i,ij',x,1./(lam*(1.-xy_exp)+xy_exp)) + extra1)
     return delta_x.sum(),delta_y.sum()
 
 def dist_check_E(x,y,lam,E,selfs=True):
@@ -222,12 +221,12 @@ def dist_check_E(x,y,lam,E,selfs=True):
         E --> total number of binary edges
         self: True for self loops
     """
-    xy_exp = np.exp(np.einsum('i,j',x,y))
+    xy_exp = np.exp(-np.einsum('i,j',x,y))
     if not selfs:
-        extra1 = lam*np.einsum('ii->',(xy_exp-1.)/(lam*(xy_exp-1.)+1.))
+        extra1 = lam*np.einsum('ii->',(1.-xy_exp)/(lam*(1.-xy_exp)+xy_exp))
     else:
         extra1=0
-    delta_E = E- lam*np.einsum('ij->',(xy_exp-1)/(lam*(xy_exp-1)+1)) + extra1
+    delta_E = E- lam*np.einsum('ij->',(1.-xy_exp)/(lam*(1.-xy_exp)+xy_exp)) + extra1
     return delta_E
 
 

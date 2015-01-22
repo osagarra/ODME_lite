@@ -89,20 +89,20 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
         return a,b,c,d
     if not selfs:
         while True:
-            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
             aux2 = np.einsum('i,j',c,d)
             #strengths
-            b = sin*(alf*alf)/(d*np.einsum('i,ij',a*c,aux/(aux2*(aux-1.)+1.)) - d*np.einsum('i,i->i',a*c,np.exp(a/alf*b/alf)/(c*d*(np.exp(a/alf*b/alf)-1.)+1.)))
-            b[inds_in]=0
-            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
-            a = sout*(alf*alf)/(c*np.einsum('j,ij',b*d,aux/(aux2*(aux-1.)+1.)) - c*np.einsum('j,j->j',b*d,np.exp(a/alf*b/alf)/(c*d*(np.exp(a/alf*b/alf)-1.)+1.)))
+            b = sin*(alf*alf)/(d*np.einsum('i,ij',a*c,1./(aux2*(1.-aux)+aux)) -  d*a*c/(c*d*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf)))
+            b[inds_in]=0            
+            aux = np.exp(-np.einsum('i,j',a/alf,b/alf))
+            a = sout*(alf*alf)/(c*np.einsum('j,ij',b*d,1./(aux2*(1.-aux)+aux)) - c*b*d/(c*d*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf)))
             a[inds_out]=0
-            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            aux = np.exp(-np.einsum('i,j',a/alf,b/alf))
             #degrees
-            d = kin/( np.einsum('i,ij',c,(aux-1.)/(aux2*(aux-1.)+1.)) - np.einsum('i,i->i',c,(np.exp(a/alf*b/alf)-1.)/(c*d*(np.exp(a/alf*b/alf)-1.)+1.)))
+            d = kin/(  np.einsum('i,ij',c,(1.-aux)/(aux2*(1.-aux)+aux)) - np.einsum('i,i->i',c,(1.-np.exp(-a/alf*b/alf))/(c*d*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf))))
             d[inds_in]=0
             aux2 = np.einsum('i,j',c,d)
-            c = kout/( np.einsum('j,ij',d,(aux-1.)/(aux2*(aux-1.)+1.)) - np.einsum('j,j->j',d,(np.exp(a/alf*b/alf)-1.)/(c*d*(np.exp(a/alf*b/alf)-1.)+1.)))
+            c = kout/( np.einsum('j,ij',d,(1.-aux)/(aux2*(1.-aux)+aux)) - np.einsum('j,j->j',d,(1.-np.exp(-a/alf*b/alf))/(c*d*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf))))
             c[inds_out]=0
             #if reps>10:
             tola = np.max(np.abs(afake-a))
@@ -136,20 +136,20 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
 		#raise NotImplementedError("Feature not implemented")
     else:
         while True:
-            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
             aux2 = np.einsum('i,j',c,d)
             #strengths
-            b = sin*(alf*alf)/(d*np.einsum('i,ij',a*c,aux/(aux2*(aux-1.)+1.)))
-            b[inds_in]=0
-            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
-            a = sout*(alf*alf)/(c*np.einsum('j,ij',b*d,aux/(aux2*(aux-1.)+1.)))
+            b = sin* (alf*alf)/(d*np.einsum('i,ij',a*c,1./(aux2*(1.-aux)+aux)))
+            b[inds_in]=0            
+            aux = np.exp(-np.einsum('i,j',a/alf,b/alf))
+            a = sout*(alf*alf)/(c*np.einsum('j,ij',b*d,1./(aux2*(1.-aux)+aux)))
             a[inds_out]=0
-            aux = np.exp(np.einsum('i,j',a/alf,b/alf))
+            aux = np.exp(-np.einsum('i,j',a/alf,b/alf))
             #degrees
-            d = kin/np.einsum('i,ij',c,(aux-1.)/(aux2*(aux-1.)+1.))
+            d = kin/(  np.einsum('i,ij',c,(1.-aux)/(aux2*(1.-aux)+aux)))
             d[inds_in]=0
             aux2 = np.einsum('i,j',c,d)
-            c = kout/np.einsum('j,ij',d,(aux-1.)/(aux2*(aux-1.)+1.))
+            c = kout/( np.einsum('j,ij',d,(1.-aux)/(aux2*(1.-aux)+aux)))            
             c[inds_out]=0
             #if reps>10:
             tola = np.max(np.abs(afake-a))
@@ -383,34 +383,34 @@ def dist_check_s(x,y,z,w,sout,sin,selfs=True):
         sout,sin -- > real strength sequences (length N)
         self: True for self loops
     """
-    xy_exp = np.exp(np.einsum('i,j',x,y))
+    xy_exp = np.exp(-np.einsum('i,j',x,y))
     zw = np.einsum('i,j',z,w)
     if not selfs:
-        extra1 = np.einsum('i,i,ii->i',x*z,y*w,xy_exp/(zw*(xy_exp-1.)+1.)) # diagonal
+        extra1 = np.einsum('i,i,ii->i',x*z,y*w,1./(zw*(1.-xy_exp)+xy_exp)) # diagonal
     else:
         extra1=0
     #delta_x = sout - x*z*np.einsum('j,ij',y*w,xy_exp/(zw*(xy_exp-1.)+1.)) + extra1
     #delta_y = sin - w*y*np.einsum('i,ij',x*z,xy_exp/(zw*(xy_exp-1.)+1.)) +  extra1
     #return delta_x.sum(),delta_y.sum()
-    delta_x = (sout - x*z*np.einsum('j,ij',y*w,xy_exp/(zw*(xy_exp-1.)+1.)) + extra1).sum()
+    delta_x = np.abs(sout - x*z*np.einsum('j,ij',y*w,1./(zw*(1.-xy_exp)+xy_exp)) + extra1).sum()
     return delta_x,delta_x
 
 
 def dist_check_k(x,y,z,w,kout,kin,selfs=True):
     """
-        Computes distance between prediction and reality for degrees
+        Computes distance between prediction and reality for degrees in absolute value
         x,y,z,w --> arrays of lagrange multpliers
         kout,kin -- > real degree sequences
         self: True for self loops
     """
-    xy_exp = np.exp(np.einsum('i,j',x,y))
+    xy_exp = np.exp(-np.einsum('i,j',x,y))
     zw = np.einsum('i,j',z,w)
     if not selfs:
-        extra1 = np.einsum('i,i->i',z*w,(np.exp(x*y)-1.)/(z*w*(np.exp(x*y)-1.)+1.)) # diagonal
+        extra1 = np.einsum('i,i->i',z*w,(1.-np.exp(-x*y))/(z*w*(1.-np.exp(-x*y))+np.exp(-x*y))) # diagonal
     else:
         extra1=0
     #delta_z = (kout - z*np.einsum('j,ij',w,(xy_exp-1.)/(zw*(xy_exp-1.)+1.)) + extra1)
     #delta_w = kin - w*np.einsum('i,ij',z,(xy_exp-1.)/(zw*(xy_exp-1.)+1.)) +  extra1
     #return delta_z.sum(),delta_w.sum()
-    delta_z = (kout - z*np.einsum('j,ij',w,(xy_exp-1.)/(zw*(xy_exp-1.)+1.)) + extra1).sum() # equal for both
+    delta_z = np.abs(kout - z*np.einsum('j,ij',w,(1.-xy_exp)/(zw*(1.-xy_exp)+xy_exp)) + extra1).sum() # equal for both
     return delta_z,delta_z
