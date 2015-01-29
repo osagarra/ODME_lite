@@ -149,7 +149,7 @@ Graph average value of existing weights as a function of cost.
 
 The following command
 ```
-time ./net_analysis -N 94 -d 1 -f tests/sample.tr -z 0 -a tests/cost_matrix.dists  -h 1
+time ./MultiEdgeAnalyzer -N 1000 -d 1 -f ../tests/sample.tr -z 0 -a ../tests/cost_matrix.dists  -h 1
 ```
 takes on a intel® Core™ i5-2500 CPU @ 3.30GHz × 4 with 12 GM RAM the following time
 ```

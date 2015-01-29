@@ -1057,27 +1057,34 @@ void w_graph_print_entropy(double* seq,int len,char* output){
 	return;
 }
 
-double w_graph_loglikelyhood(W_GRAPH* WG,int N_nodes,double** wij){
-	double L=0;
+double w_graph_loglikelyhood_poisson(W_GRAPH* WG,int N_nodes,double** wij){
+	double L,p,mu;
 	int i,j,t;
-	double p,mu;
-	//int T = w_graph_total_weight(WG->node,N_nodes);
+	L = 0;
 	for(i=0;i<N_nodes;i++) // all edges
 	{
-		for(j=0;j<WG->node[i].kout;j++)
+		for(j=0;j<N_nodes;j++)
 		{
-			t = WG->node[i].w_out[j];
-			mu = wij[i][WG->node[i].out[j]];
-			if(mu>0)
-			{
-				p = gsl_ran_poisson_pdf (t, mu);
-				//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
-				L+= log(p);
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout);
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0
+				}
+                mu = wij[i][j];
+				if(mu>0)
+				{
+					p = gsl_ran_poisson_pdf (t, mu);
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+					L+= log(p);
+				}
 			}
 		}
-				
 	}
-	return L;
+	return L;    
 }
 
 
