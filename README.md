@@ -37,7 +37,9 @@ the weights are integer numbers.
 	Sagarra O., Font-Clos F., Pérez-Vicente C. and Díaz-Guilera, A.
 	[Europhysics Letters](http://iopscience.iop.org/0295-5075/107/3/38002/article;jsessionid=D22CAAF312F43653DA0C1279853CBF0C.c3)
 
-[3] To be added
+[3] Supersampling and network reconstruction of urban mobility.
+	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
+	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
 
 
 
