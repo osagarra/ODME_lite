@@ -19,7 +19,9 @@ In case you are interested in randomizing binary networks in a variety of situat
 	Sagarra O., Pérez-Vicente C. and Díaz-Guilera, A.  Phys. Rev. E 88, 062806 (2013)
     [Physical Review E](http://pre.aps.org/abstract/PRE/v88/i6/e062806)
     
-[2] To be added soon
+[2] Supersampling and network reconstruction of urban mobility.
+	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
+	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
 
 External references:
 
