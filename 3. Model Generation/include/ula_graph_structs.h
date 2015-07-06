@@ -50,9 +50,16 @@ typedef struct EDGE{
 typedef struct W_GRAPH{
 	
 	int N_nodes;				/// number of nodes
-	NODE* node;			/// vector with the nodes
     int E;				/// number of edges
+    int T;				/// number of events
+    int L;				/// number of edgepairs
+
+	NODE* node;			/// vector with the nodes
 	EDGE* edge;			/// vector with all the edges
+
+	int opt_dir; 		///0 no, 1 yes
+	int opt_self; 		/// 0 no, 1 yes
+
 	//// 	Compatibility with NetRandGen
 	//int linksWrepeat;	/// number of links with repetitions
 	//int max_k;			/// maximum degree

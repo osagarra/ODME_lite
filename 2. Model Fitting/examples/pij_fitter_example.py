@@ -12,6 +12,14 @@ except ImportError:
     from numba import autojit
 
 
+pref = 'lagrange_mult'
+
+try:
+    os.mkdir(pref)
+except OSError:
+    pass
+
+
 
 @autojit
 def fill_vect(pij,N):

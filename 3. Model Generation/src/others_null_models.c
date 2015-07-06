@@ -86,6 +86,8 @@ W_GRAPH* w_graph_seq_gravity_bernouilli_directed(int N_nodes,int **s, double **d
     if(verbose>0) printf("-- Warning: This takes a while, if you are in a hurry, use the multinomial version (asymptotically equivalent)...-- \n");
     // alloc w_graph
     W_GRAPH* WG  = w_graph_alloc(N_nodes);
+    WG->opt_self = self_opt;
+    WG->opt_dir = 1;
     int i;
     int out_av,in_av;
 
@@ -272,6 +274,9 @@ W_GRAPH* w_graph_seq_gravity_bernouilli_directed(int N_nodes,int **s, double **d
 W_GRAPH* w_graph_seq_gravity_multinomial_directed(int N_nodes,int **s, double **d, double gamma, gsl_rng* randgsl, int self_opt, int verbose){
     // alloc w_graph
     W_GRAPH* WG  = w_graph_alloc(N_nodes);
+    WG->opt_self = self_opt;
+    WG->opt_dir = 1;
+
     int i;
     int out_av,in_av;
 
@@ -555,6 +560,8 @@ W_GRAPH*  w_graph_radiation_model_stochastic_directed(int N_nodes,int **s, doubl
     int i;
     // alloc graph
     W_GRAPH* WG = w_graph_alloc(N_nodes);
+    WG->opt_self = self_opt;
+    WG->opt_dir = 1;
 
 
 	int tot_trips2,tot_trips3;
@@ -594,6 +601,8 @@ W_GRAPH* w_graph_radiation_model_multinomial_directed(int N_nodes,int **s, doubl
 	int i,j; // aux indices
     // alloc graph
     W_GRAPH* WG = w_graph_alloc(N_nodes);
+    WG->opt_self = self_opt;
+    WG->opt_dir = 1;
 
     int tot_trips2,tot_trips3,sij;
 	tot_trips2=tot_trips3=0;
@@ -712,6 +721,9 @@ W_GRAPH* gravity_poisson_undirected_graph2(double*x,  int N_nodes , double **d, 
     double mu;
     int i,j,out_d, in_d;
     W_GRAPH* WG = w_graph_alloc(N_nodes);
+    WG->opt_self = self_opt;
+    WG->opt_dir = 0;
+
     aux2=0;
     for(i=0;i<N_nodes;i++)
     {
@@ -765,7 +777,7 @@ W_GRAPH* gravity_poisson_undirected_graph2(double*x,  int N_nodes , double **d, 
 		printf("# <s>_out=%.3lf+-%.3lf, <k>_out=%.3lf+-%.3lf\n",sout_mean, sout_std, kout_mean, kout_std);
 		printf("# Number of Empty nodes: (out) %d\n",nulls_out);
 		printf("# Total T:%d \n",aux2);
-		printf("# Total Entropy S: %f\n",w_graph_entropy_multi_edge(WG,N_nodes));
+		printf("# Total Entropy S: %f\n",w_graph_entropy_multinomial(WG,N_nodes,self_opt));
 	}
     return WG;
     
@@ -780,6 +792,9 @@ W_GRAPH* gravity_poisson_directed_graph2(double**x,  int N_nodes , double ** d, 
     //gsl_ran_multinomial(randgsl, N_nodes*(N_nodes-1)/2,  T, ps, ps_false);
     //free(ps);
     W_GRAPH* WG = w_graph_alloc(N_nodes);
+    WG->opt_self = self_opt;
+    WG->opt_dir = 1;
+
     aux2=0;
     for(i=0;i<N_nodes;i++)
     {
@@ -838,7 +853,7 @@ W_GRAPH* gravity_poisson_directed_graph2(double**x,  int N_nodes , double ** d, 
 		printf("# (in)  <s>=%.3lf+-%.3lf, <k>=%.3lf+-%.3lf\n",sin_mean, sin_std, kin_mean, kin_std);
 		printf("# Number of Empty nodes: (out) %d \t (in) %d \n",nulls_out,nulls_in);
 		printf("# Total T:%d \n",aux2);
-		printf("# Total Entropy S: %f\n",w_graph_entropy_multi_edge(WG,N_nodes));
+		printf("# Total Entropy S: %f\n",w_graph_entropy_multinomial(WG,N_nodes,self_opt));
 
 	}
     return WG;

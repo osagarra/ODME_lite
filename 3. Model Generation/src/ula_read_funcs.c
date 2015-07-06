@@ -365,7 +365,7 @@ double** read_node_list_xatts_double(char *input_name,int num_nodes, int num_att
 	int m=0;
 	int flag=0;
 	k=0;
-	char dummy[100];	
+	char dummy[200];	
 	while(k<header)
 	{
 		 fgets(dummy, sizeof(dummy), input);
@@ -405,7 +405,7 @@ int** read_node_list_xatts_int(char *input_name,int num_nodes, int num_atts, int
 	int m=0;
 	int flag=0;
 	k=0;
-	char dummy[100];	
+	char dummy[200];	
 	while(k<header)
 	{
 		 fgets(dummy, sizeof(dummy), input);

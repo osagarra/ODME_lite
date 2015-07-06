@@ -17,6 +17,12 @@ double** read_node_list_double(char *input_name,int num_nodes, int header);
 double* read_node_list_double_undir(char *input_name,int num_nodes, int header);
 int**    read_net_list(char *input_name, int num_nodes, int header);
 double** read_net_list_double(char *input_name, int num_nodes, int header);
+double** read_node_list_xatts_double(char *input_name,int num_nodes, int num_atts, int header);
+int** read_node_list_xatts_int(char *input_name,int num_nodes, int num_atts, int header);
+/******* Dist funcs ********/
+double* nearest_neighbor_dist(double ** dist, int num_nodes);
+int* nearest_neighbor(double ** dist, int num_nodes);
+
 //void write_indices(double i1, double i11, double i2, double i22, double i3, double i33, double gamma,int reps, char *output);
 /******* Print funcs ******/
 //void     print_w_2_file_double(char *input_name, int N_nodes, double **w, double **w2, double eps);

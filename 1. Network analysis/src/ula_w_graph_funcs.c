@@ -14,7 +14,7 @@
 /****************************************************************************
  * I-O *
  ****************************************************************************/
-W_GRAPH* w_graph_dist_read_edge_list(char *input_name, int N_nodes, int opt_dir, int header){
+W_GRAPH* w_graph_read_edge_list(char *input_name, int N_nodes, int opt_dir, int header){
 	int i,j,tij;
 	int n,E;
 	n=E=0;
@@ -25,6 +25,8 @@ W_GRAPH* w_graph_dist_read_edge_list(char *input_name, int N_nodes, int opt_dir,
 	i=j=tij=0;
 	int k=0;
 	int g;
+	int opt_self;
+	opt_self = 0;
 	char dummy[100];
 	while(k<header)
 	{
@@ -51,13 +53,16 @@ W_GRAPH* w_graph_dist_read_edge_list(char *input_name, int N_nodes, int opt_dir,
 				}else{
 					w_graph_add_multi_link_undirected(WG, N_nodes, i, j, tij);
 				}
+				if(i==j) opt_self = 1; // self_loop flag
 			}
 			n+=tij;
 			E++;
 		}
   	}
-	printf(" -- Total num of trips %i \t Total number of edges:%d\n",n,E);
+	printf(" -- Total num of trips %i \t Total number of edges:%d. Selfloops? %d\n",n,E,opt_self);
 	fclose(input);
+	WG->opt_dir = opt_dir;
+	WG->opt_self = 0;
 	return WG;
 }
 
@@ -89,10 +94,13 @@ W_GRAPH* w_graph_alloc(int N_nodes){
         WG->node[i].w_in=calloc(1,sizeof(int));
         WG->node[i].w_out=calloc(1,sizeof(int));
     }
+    // not setting these values, so error jumps if user does not set them
+    //WG->opt_dir = 1; // directed by defatult (values set for backwards compatibliity)
+    //WG->opt_self = 1; // self loops accepted by default 
     return WG;
 }
 
-void w_graph_free_nodes(W_GRAPH* WG, int N_nodes){
+void w_graph_free_nodes(W_GRAPH* WG, int N_nodes){ // warning, does not free edges!
     int i;
     for(i=0;i<N_nodes;i++)
     {
@@ -299,6 +307,61 @@ double ** w_graph_compute_k_analitic(W_GRAPH* WG, int N_nodes, int self_opt){
 }
 
 
+double * w_graph_compute_k_binary_undirected(double* x, int N_nodes, int self_opt){
+    int i,j;
+    double* k = cast_vec_double(N_nodes);
+    for(i=0;i<N_nodes;i++)
+    {
+		k[i] = 0;
+		for(j=0;j<N_nodes;j++)
+		{
+			if(i!=j || self_opt>0)
+			{
+				k[i]+= x[j] / (1.+x[i]*x[j]);
+			}
+		}
+		k[i] = k[i]*x[i];
+	}
+	return k;
+}
+
+double w_graph_compute_E_binary_undirected(double* x, int N_nodes, int self_opt){
+	double* kk = w_graph_compute_k_binary_undirected(x, N_nodes, self_opt);
+	double E = sum_vec_double(kk,N_nodes);
+	free(kk);
+	return E;
+}
+
+double ** w_graph_compute_k_binary_directed(double** x, int N_nodes, int self_opt){
+    int i,j;
+    double** k = cast_mat_double(2,N_nodes);
+    for(i=0;i<N_nodes;i++)
+    {
+		k[0][i] = 0;
+		k[1][i] = 0;
+		for(j=0;j<N_nodes;j++)
+		{
+			if(i!=j || self_opt>0)
+			{
+				k[0][i]+= x[1][j] / (1.+x[0][i]*x[1][j]);
+				k[1][i]+= x[0][j] / (1.+x[1][i]*x[0][j]);
+			}
+		}
+		k[0][i] = k[0][i]*x[0][i];
+		k[1][i] = k[1][i]*x[1][i];
+	}
+	return k;
+}
+
+double w_graph_compute_E_binary_directed(double** x, int N_nodes, int self_opt){
+	double** kk = w_graph_compute_k_binary_directed(x, N_nodes, self_opt);
+	double E = sum_vec_double(kk[0],N_nodes);
+	//printf("E:%f\n",E);fflush(stdout);
+	free_mat_double(kk,2);
+	return E;
+}
+
+
 
 double ** w_graph_compute_k_analitic_from_s_directed(int** s, int N_nodes, int self_opt){
     double** k=cast_mat_double(4,N_nodes); // 2 firts out-in, then sigma.
@@ -373,6 +436,64 @@ double ** w_graph_compute_k_analitic_from_s_undirected(int* s, int N_nodes, int 
 		k[1][i] = k[1][i]-k[0][i];
     }
     return k;
+}
+
+
+double w_graph_compute_T_analytic_from_xy(double** x2, int N_nodes, int layers, double gamma, int opt_dir, int opt_self, int opt_indist, int opt_agg, int fixk){
+    int i,j,ind2,ind3,ind4;
+    double t,T;
+    // if fixk=0 consider the case where s is fixed, fixk=1 case with fixed number of edges, fixk=2 s and k are fixed
+    T=0;
+    if(opt_dir>0)
+    {
+        ind2=1;
+        ind3=2;
+        ind4=3;
+    }else{
+        ind2=0;
+        ind3=1;
+        ind4=1;
+    }
+    for(i=0;i<N_nodes;i++)
+    {
+        for(j=0;j<N_nodes;j++)
+        {
+            if((opt_indist<=0)&&(opt_agg<=0))
+            { // ME
+                if(fixk<=0)
+                {
+                    t = x2[0][i]*x2[ind2][j];                
+                }else if(fixk==1){
+                    t = exp(x2[0][i]*x2[ind2][j])*x2[0][i]*x2[ind2][j]*gamma/(1.+gamma*(exp(x2[0][i]*x2[ind2][j])-1));
+                }else{
+                    t = exp(x2[0][i]*x2[ind2][j])*x2[ind3][i]*x2[ind4][j]/(1.+x2[ind3][i]*x2[ind4][j]*(exp(x2[0][i]*x2[ind2][j])-1));
+                }
+            }else{
+                if(opt_indist>0)
+                { // W
+                    if(fixk<=0)
+                    {
+                        t = layers*x2[0][i]*x2[ind2][j]/(1.-x2[0][i]*x2[ind2][j]);
+                    }else if(fixk==1){
+                        t = layers/pow(1.-x2[0][i]*x2[ind2][j],layers)*x2[0][i]*x2[ind2][j]*gamma/(1.+gamma*(1./pow(1.-x2[0][i]*x2[ind2][j],layers)-1));
+                    }else{
+                        t = layers/pow(1.-x2[0][i]*x2[ind2][j],layers)*x2[ind3][i]*x2[ind4][j]/(1.+x2[ind3][i]*x2[ind4][j]*(1./pow(1.-x2[0][i]*x2[ind2][j],layers)-1));
+                    }                    
+                }else{ // Binary
+                    if(fixk<=0)
+                    {
+                        t = layers*x2[0][i]*x2[ind2][j]/(1.+x2[0][i]*x2[ind2][j]);                    
+                    }else if(fixk==1){
+                        t = layers*pow(1.+x2[0][i]*x2[ind2][j],layers)*x2[0][i]*x2[ind2][j]*gamma/(1.+gamma*(pow(1.+x2[0][i]*x2[ind2][j],layers)-1));
+                    }else{
+                        t = layers*pow(1.+x2[0][i]*x2[ind2][j],layers)*x2[ind3][i]*x2[ind4][j]/(1.+x2[ind3][i]*x2[ind4][j]*(pow(1.+x2[0][i]*x2[ind2][j],layers)-1));
+                    }                    
+                }
+            }
+            T+=t;
+        }    
+    }
+    return T;
 }
 
 
@@ -514,6 +635,7 @@ double ** w_graph_compute_clust(W_GRAPH * WG, int N_nodes){ // 2 cols: unweighte
 /****************************************************************************
  * Weight funcs *
  ****************************************************************************/
+
 int w_graph_total_weight( W_GRAPH* WG, int N_nodes){
     int i;
     int T;
@@ -522,72 +644,137 @@ int w_graph_total_weight( W_GRAPH* WG, int N_nodes){
     {
         T+=(int)WG->node[i].sout;
     }
+    WG->T = T;
     return T;
 }
 
 int w_graph_total_edges( W_GRAPH* WG, int N_nodes){
-    // counts self loops properly (bit more slower... but ok)
+    // counts self loops properly (bit slower... but ok)
     int i,j;
-    int T,aux2;
-    T=aux2=0;
+    //int T,aux2;
+    int aux2;
+    aux2=0;
     for(i=0;i<N_nodes;i++)
     {
-        T+=WG->node[i].kout;
+        //T+=WG->node[i].kout;
         for(j=0;j<WG->node[i].kout;j++)
         {
-            aux2++;
-            if(WG->node[i].out[j]==i)
-            {
-                aux2++;
-            }
-        }
+			aux2++;
+			if(WG->node[i].out[j]==i) // if selfs count twice
+			{
+				aux2++;
+			}
+		}
     }
     //return T;
+    WG->E = aux2;
     return aux2;
+}
+
+int w_graph_total_edgepairs( W_GRAPH* WG, int N_nodes){
+    // counts total number of edge pairs
+    int L;
+    if (WG->opt_self>0)
+    {
+		L = N_nodes*N_nodes+N_nodes; // we coutn self-loops twice to adapt to undirected
+
+	}else{
+		L = N_nodes*(N_nodes-1);
+	}
+	WG->L = L;
+    return L;
+}
+
+int * w_graph_compute_p(W_GRAPH* WG, int N_nodes, int* aux){
+    int E;
+    int* w;
+    int i,j,aux2,mem,t,dest;
+    aux2=0;
+    
+	E = w_graph_total_edgepairs( WG, N_nodes);
+	w = cast_vec_int(E);
+	mem=E;
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+			if((WG->opt_self>0)||(i!=j))
+			{
+				dest=find_value_int(WG->node[i].out, j, WG->node[i].kout);
+				if(dest>=0)
+				{
+					t = 1;
+				}else{
+					t = 0;
+				}
+				w[aux2] = (int)t;
+				aux2++;
+				if(j==i) // count twice
+				{
+					w[aux2]=(int)t;
+					aux2++;
+				}
+				//printf("Edgepair: %d. I:%d J:%d | Connection: %d Dest:%d \n",aux2,i,j,t,dest);fflush(stdout);
+			}
+		}
+	}
+	assert(aux2==E);
+	*aux=aux2;
+    return w;
 }
 
 
 int * w_graph_compute_w(W_GRAPH* WG, int N_nodes, int* aux, int zeros){
     //zeros not implemented
-    int E = w_graph_total_edges( WG, N_nodes);
-    int* w=cast_vec_int(E);
-    int i,j,aux2,mem;
-    mem=E;
+    int E;
+    int* w;
+    int i,j,aux2,mem,t,dest;
     aux2=0;
-    if(zeros>0)
-    {
-        for(i=0;i<N_nodes;i++)
-        {
-            for(j=0;j<WG->node[i].kout;j++)
-            {
-                if(aux2+1>mem)
-                {
-                    w=realloc(w, sizeof(int)*2*mem);
-                    mem=2*mem;
-                }
-                w[aux2]=(int)WG->node[i].w_out[j];
-                aux2++;
-                if(WG->node[i].out[j]==i) // count twice
-                {
-                    if(aux2+1>mem)
-                    {
-                        w=realloc(w, sizeof(int)*2*mem);
-                        mem=2*mem;
-                    }
-                    w[aux2]=(int)WG->node[i].w_out[j];
-                    aux2++;
-                }
 
-            }
-        }
+	int L2;
+    L2 =  w_graph_total_edgepairs(WG, N_nodes);
+    
+    if(zeros>0) // add also zeros
+    {
+		E = w_graph_total_edgepairs( WG, N_nodes);
+		w = cast_vec_int(E);
+		mem=E;
+		for(i=0;i<N_nodes;i++) // all edges
+		{
+			for(j=0;j<N_nodes;j++)
+			{
+				if((WG->opt_self>0)||(i!=j))
+				{
+					dest=find_value_int(WG->node[i].out, j, WG->node[i].kout);
+					if(dest>=0)
+					{
+						t = WG->node[i].w_out[dest];
+					}else{
+						t = 0;
+					}
+					w[aux2] = (int)t;
+					aux2++;
+					if(j==i) // count twice
+					{
+						w[aux2]=(int)t;
+						aux2++;
+					}
+					//printf("Edgepair: %d. I:%d J:%d | Connection: %d Dest:%d \n",aux2,i,j,t,dest);fflush(stdout);
+				}
+			}
+		}
+		assert(aux2==L2);
     }else{
+		E = w_graph_total_edges( WG, N_nodes);
+		w = cast_vec_int(E);
+		mem=E;
         for(i=0;i<N_nodes;i++)
         {
             for(j=0;j<WG->node[i].kout;j++)
             {
                 if(aux2+1>mem)
                 {
-                    w=realloc(w, sizeof(int)*2*mem);
+					w=safe_int_realloc(w, mem, 2*mem, 0);
                     mem=2*mem;
                 }
                 w[aux2]=(int)WG->node[i].w_out[j];
@@ -596,7 +783,7 @@ int * w_graph_compute_w(W_GRAPH* WG, int N_nodes, int* aux, int zeros){
                 {
                     if(aux2+1>mem)
                     {
-                        w=realloc(w, sizeof(int)*2*mem);
+						w=safe_int_realloc(w, mem, 2*mem, 0);
                         mem=2*mem;
                     }
                     w[aux2]=(int)WG->node[i].w_out[j];
@@ -605,10 +792,10 @@ int * w_graph_compute_w(W_GRAPH* WG, int N_nodes, int* aux, int zeros){
                 
             }
         }
+		w=safe_int_realloc(w, mem, aux2, 0);// fix final size
     }
-    //printf("E: %d, aux2:%d delta:%d", E, aux2, E-aux2); fflush(stdout);
+    //printf("E: %d, aux2:%d delta:%d\n", E, aux2, E-aux2); fflush(stdout);
     *aux=aux2;
-    realloc(w,sizeof(int)*aux2); // fix final size
     return w;
 }
 
@@ -665,8 +852,8 @@ double** w_graph_compute_p_w_analitic_from_s_undirected(int maxt, double binn, i
     }
     (*len)=aux;
     printf("done: %d bins\n",aux); fflush(stdout);
-    realloc(p[0],sizeof(double)*aux);
-    realloc(p[1],sizeof(double)*aux);
+    p[0] = safe_double_realloc(p[0],N_nodes,aux,0);
+    p[1] = safe_double_realloc(p[1],N_nodes,aux,0);
     return p;
 }
 
@@ -726,13 +913,13 @@ double** w_graph_compute_p_w_analitic_from_s_directed(int maxt, double binn, int
     }
     (*len)=aux;
     //printf("done\n"); fflush(stdout);
-    realloc(p[0],sizeof(double)*aux);
-    realloc(p[1],sizeof(double)*aux);
+    p[0] = safe_double_realloc(p[0],N_nodes,aux,0);
+    p[1] = safe_double_realloc(p[1],N_nodes,aux,0);
     return p;
 }
 
-double * w_graph_compute_w_ss(W_GRAPH* WG, int N_nodes, int weight){
-//int * w_graph_compute_w_ss(W_GRAPH* node, int N_nodes, int weight){
+double * w_graph_compute_wp_ss(W_GRAPH* WG, int N_nodes, int weight){
+	// computes existing weight average //
     int E;
     E=w_graph_total_edges(WG,N_nodes);
     //int* ww=cast_vec_int(E);
@@ -766,7 +953,43 @@ double * w_graph_compute_w_ss(W_GRAPH* WG, int N_nodes, int weight){
     return ww;
 }
 
-
+double * w_graph_compute_w_ss(W_GRAPH* WG, int N_nodes, int weight){
+	// computes total weight average //
+	int opt_self = WG->opt_self;
+    int E;
+    E=w_graph_total_edgepairs(WG,N_nodes);
+    double* ww=cast_vec_double(E);
+    int i,j,aux;
+    aux=0;
+    for(i=0;i<N_nodes;i++)
+    {
+        for(j=0;j<N_nodes;j++)
+        {
+			if((opt_self>0)||(i!=j))
+			{
+				if (weight>0)
+				{
+					ww[aux]=((double)WG->node[i].sout)*((double)WG->node[j].sin);
+				}else{
+					ww[aux]=((double)WG->node[i].kout)*((double)WG->node[j].kin);
+				}
+				aux++;
+				if(i==j)
+				{
+					if (weight>0)
+					{
+						ww[aux]=((double)WG->node[i].sout)*((double)WG->node[j].sin);
+					}else{
+						ww[aux]=((double)WG->node[i].kout)*((double)WG->node[j].kin);
+					}
+					aux++;
+				}
+            }
+        }
+    }
+    assert(aux==E);
+    return ww;
+}
 //double ** w_graph_compute_xy(w_graph * node, int N_nodes){
     
     //int i,j;
@@ -827,9 +1050,9 @@ double ** w_graph_compute_Y2(W_GRAPH * WG, int N_nodes, int opt_dir){
 }
 
 /****************************************************************************
- * Entropy & LIkelyhood funcs *
+ * Entropy *
  ****************************************************************************/
-double w_graph_entropy(W_GRAPH* WG, int N_nodes){
+double w_graph_entropy_multinomial(W_GRAPH* WG, int N_nodes, int opt_dir){ // not entirely correct (esactly)... but...
 	double S,p;
 	int i,j,t;
 	int T = w_graph_total_weight(WG,N_nodes);
@@ -843,8 +1066,358 @@ double w_graph_entropy(W_GRAPH* WG, int N_nodes){
 			S+= p*log(p);
 		}		
 	}
+	if(opt_dir<=0) S=S/2.;
 	return -S;
 }
+
+
+double w_graph_entropy_poisson(W_GRAPH* WG, double** x,int N_nodes, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j];
+                if(mu>0)
+				{
+					p = gsl_ran_poisson_pdf (t, mu);
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}
+				if(p>0) S+= p*log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+
+
+double w_graph_entropy_geometric(W_GRAPH* WG, double**x, int N_nodes, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j]; // for gsl this is 1-p
+                if(mu>0)
+				{
+					p = gsl_ran_geometric_pdf (t, 1.-mu)*mu; // returns p (1-p)^(k-1) [so must multiply by (1-p)]
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}
+				if(p>0) S+= p*log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+
+double w_graph_entropy_binomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j]/(1+y[i]*yy[j]);
+                if(mu>0)
+				{
+					gsl_ran_binomial_pdf(t,mu,layers);
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}
+				if(p>0) S+= p*log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+
+double w_graph_entropy_negbinomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j]/(1.+y[i]*yy[j]);
+                if(mu>0)
+				{
+					gsl_ran_negative_binomial_pdf(t,1.-mu,layers); // for gsl p is inverted
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}
+				if(p>0) S+= p*log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+double w_graph_entropy_bernouilli(W_GRAPH* WG, double** x, int N_nodes, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j]/(1+y[i]*yy[j]);
+                if(mu>0)
+				{
+					p = mu;
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}
+				if(p>0) S+= p*log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+
+
+double w_graph_entropy_ZIP(W_GRAPH* WG, double** x, int N_nodes, double gamma, int opt_self, int opt_dir){
+	double S,p;
+	int i,j,t,dest;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+ 		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+				t=find_value_int(WG->node[i].out, j, WG->node[i].kout);
+                if(t>-1) // connection   
+                {
+					dest = WG->node[i].out[t];
+					t = WG->node[i].w_out[dest];
+					p = gamma*exp(y[i]*yy[dest])/(gamma*(exp(y[i]*yy[dest])-1)+1) * gsl_ran_poisson_pdf (t, y[i]*yy[dest]);//
+				}else{   
+                    p = 1 - gamma*(exp(y[i]*yy[j])-1)/(gamma*(exp(y[i]*yy[j])-1)+1);
+				}
+            }		
+		    S+= p*log(p);
+        }
+	}
+	if(opt_dir<0) S =S/2.;
+	return -S;    
+}
+
+
+
+double w_graph_entropy_ZIP2(W_GRAPH* WG, double** x,int N_nodes,  int opt_self, int opt_dir){
+	double S,p;
+	int i,j,t,dest;
+    double *y;
+    double *yy;
+    double * z;
+    double * zz;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+        z = x[2];
+        zz = x[3];
+    }else{
+        y = x[0];
+        yy = x[0];
+        z = x[1];
+        zz = x[1];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+ 		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+				t=find_value_int(WG->node[i].out, j, WG->node[i].kout);
+                if(t>-1) // connection   
+                {
+					dest = WG->node[i].out[t];
+					t = WG->node[i].w_out[dest];
+					p = z[i]*zz[dest]*exp(y[i]*yy[dest])/(z[i]*zz[dest]*(exp(y[i]*yy[dest])-1)+1) * gsl_ran_poisson_pdf (t, y[i]*yy[dest]);//
+				}else{   
+                    p = 1 - z[i]*zz[j]*(exp(y[i]*yy[j])-1)/(z[i]*zz[j]*(exp(y[i]*yy[j])-1)+1);
+				}
+            }		
+		    S+= p*log(p);
+        }
+	}
+	if(opt_dir<0) S =S/2.;
+	return -S;    
+}
+
+
+double w_graph_entropy_ZIB2(W_GRAPH* WG, double** x, int N_nodes, int layers, int opt_self, int opt_dir){
+	double S,p;
+	int i,j,t,dest;
+    double *y;
+    double *yy;
+    double * z;
+    double * zz;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+        z = x[2];
+        zz = x[3];
+    }else{
+        y = x[0];
+        yy = x[0];
+        z = x[1];
+        zz = x[1];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+ 		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+				t=find_value_int(WG->node[i].out, j, WG->node[i].kout);
+                if(t>-1) // connection   
+                {
+					dest = WG->node[i].out[t];
+					t = WG->node[i].w_out[dest];
+					p = z[i]*zz[dest]*pow(1+y[i]*yy[dest],layers)/(z[i]*zz[dest]*(pow(1+y[i]*yy[dest],layers)-1)+1) * gsl_ran_binomial_pdf (t, y[i]*yy[dest]/(1+y[i]*yy[dest]),layers);//
+				}else{   
+                    p = 1 - z[i]*zz[j]*(pow(1+y[i]*yy[j],layers)-1)/(z[i]*zz[j]*(pow(1+y[i]*yy[j],layers)-1)+1);
+				}
+            }		
+		    S+= p*log(p);
+        }
+	}
+	if(opt_dir<0) S =S/2.;
+	return -S;  
+}
+
 
 
 void w_graph_print_entropy(double* seq,int len,char* output){
@@ -859,33 +1432,476 @@ void w_graph_print_entropy(double* seq,int len,char* output){
 	}
 	mins = min_value_double(seq,len);
 	maxs = max_value_double(seq,len);
-	eps = (maxs-mins)/100.;
-    gsl_histogram* h1=histogram_double(seq,mins-mins*eps,maxs+maxs*eps,bins,len);
+	eps = (maxs-mins)/1000.;
+    mins = mins - mins*eps;
+    maxs = maxs+maxs*eps;
+    if(mins<0) mins = 0;
+    if(maxs<0) maxs = 0;
+    if(mins>=maxs) maxs = mins+1;
+    gsl_histogram* h1=histogram_double(seq,mins,maxs,bins,len);
 	print_acc(output,h1,h1);
 	return;
 }
 
-double w_graph_loglikelyhood(W_GRAPH* WG,int N_nodes,double** wij){
-	double L=0;
+
+/****************************************************************************
+ *LIkelyhood funcs *
+ ****************************************************************************/
+double w_graph_loglikelyhood_poisson(W_GRAPH* WG,int N_nodes,double** wij, int opt_self, int opt_dir){
+	double L,p,mu;
 	int i,j,t;
-	double p,mu;
-	//int T = w_graph_total_weight(WG->node,N_nodes);
+	L = 0;
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout);
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = wij[i][j];
+                if(mu>0)
+				{
+					p = gsl_ran_poisson_pdf (t, mu);
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}				
+				if(p>0) L+= log(p);
+			}
+		}
+	}
+	if(opt_dir<=0) L = L/2.;
+	return L;    
+}
+
+
+double w_graph_loglikelyhood_multinomial(W_GRAPH* WG, int N_nodes, int opt_dir){ // not entirely correct (esactly)... but...
+	double S,p;
+	int i,j,t;
+	int T = w_graph_total_weight(WG,N_nodes);
+	S = 0;
 	for(i=0;i<N_nodes;i++) // all edges
 	{
 		for(j=0;j<WG->node[i].kout;j++)
 		{
 			t = WG->node[i].w_out[j];
-			mu = wij[i][WG->node[i].out[j]];
-			if(mu>0)
-			{
-				p = gsl_ran_poisson_pdf (t, mu);
-				//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
-				L+= log(p);
-			}
-		}
-				
+			p = (double)t/(double)T;
+			S+= log(p);
+		}		
 	}
-	return L;
+	if(opt_dir<=0) S=S/2.;
+	return -S;
+}
+
+
+double w_graph_loglikelyhood_poisson_xy(W_GRAPH* WG, double** x,int N_nodes, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j];
+                if(mu>0)
+				{
+					p = gsl_ran_poisson_pdf (t, mu);
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}
+				if(p>0)S+= log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+
+
+double w_graph_loglikelyhood_geometric_xy(W_GRAPH* WG, double**x, int N_nodes, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j]; // for gsl this is 1-p
+                if(mu>0)
+				{
+					p = gsl_ran_geometric_pdf (t+1, 1.-mu); // returns p (1-p)^(k-1) [so must multiply by (1-p)]
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0; // prob is 1, but it will not count anyway
+				}
+				if(p>0) S+= log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+
+double w_graph_loglikelyhood_binomial_xy(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j]/(1+y[i]*yy[j]);
+                if(mu>0)
+				{
+					p = gsl_ran_binomial_pdf(t,mu,layers);
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}
+				if(p>0) S+= log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+
+double w_graph_loglikelyhood_negbinomial_xy(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j]/(1.+y[i]*yy[j]);
+                if(mu>0)
+				{
+					p = gsl_ran_negative_binomial_pdf(t,1.-mu,layers); // for gsl p is inverted
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}
+				if(p>0) S+= log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+double w_graph_loglikelyhood_bernouilli_xy(W_GRAPH* WG, double** x, int N_nodes, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j]/(1+y[i]*yy[j]);
+                if(mu>0)
+				{
+					p = mu;
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}
+				if(p>0) S+= log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+
+
+double w_graph_loglikelyhood_ZIP_xy(W_GRAPH* WG, double** x, int N_nodes, double gamma, int opt_self, int opt_dir){
+	double S,p;
+	int i,j,t,dest;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+ 		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+				t=find_value_int(WG->node[i].out, j, WG->node[i].kout);
+                if(t>-1) // connection   
+                {
+					dest = WG->node[i].out[t];
+					t = WG->node[i].w_out[dest];
+					p = gamma*exp(y[i]*yy[dest])/(gamma*(exp(y[i]*yy[dest])-1)+1) * gsl_ran_poisson_pdf (t, y[i]*yy[dest]);//
+				}else{   
+                    p = 1 - gamma*(exp(y[i]*yy[j])-1)/(gamma*(exp(y[i]*yy[j])-1)+1);
+				}
+            }		
+		    if(p>0) S+= log(p);
+        }
+	}
+	if(opt_dir<0) S =S/2.;
+	return -S;    
+}
+
+
+
+double w_graph_loglikelyhood_ZIP2_xy(W_GRAPH* WG, double** x,int N_nodes,  int opt_self, int opt_dir){
+	double S,p;
+	int i,j,t,dest;
+    double *y;
+    double *yy;
+    double * z;
+    double * zz;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+        z = x[2];
+        zz = x[3];
+    }else{
+        y = x[0];
+        yy = x[0];
+        z = x[1];
+        zz = x[1];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+ 		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+				t=find_value_int(WG->node[i].out, j, WG->node[i].kout);
+                if(t>-1) // connection   
+                {
+					dest = WG->node[i].out[t];
+					t = WG->node[i].w_out[dest];
+					p = z[i]*zz[dest]*exp(y[i]*yy[dest])/(z[i]*zz[dest]*(exp(y[i]*yy[dest])-1)+1) * gsl_ran_poisson_pdf (t, y[i]*yy[dest]);//
+				}else{   
+                    p = 1 - z[i]*zz[j]*(exp(y[i]*yy[j])-1)/(z[i]*zz[j]*(exp(y[i]*yy[j])-1)+1);
+				}
+            }		
+		    if(p>0) S+= log(p);
+        }
+	}
+	if(opt_dir<0) S =S/2.;
+	return -S;    
+}
+
+
+double w_graph_loglikelyhood_ZIB2_xy(W_GRAPH* WG, double** x, int N_nodes, int layers, int opt_self, int opt_dir){
+	double S,p;
+	int i,j,t,dest;
+    double *y;
+    double *yy;
+    double * z;
+    double * zz;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+        z = x[2];
+        zz = x[3];
+    }else{
+        y = x[0];
+        yy = x[0];
+        z = x[1];
+        zz = x[1];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+ 		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+				t=find_value_int(WG->node[i].out, j, WG->node[i].kout);
+                if(t>-1) // connection   
+                {
+					dest = WG->node[i].out[t];
+					t = WG->node[i].w_out[dest];
+					p = z[i]*zz[dest]*pow(1+y[i]*yy[dest],layers)/(z[i]*zz[dest]*(pow(1+y[i]*yy[dest],layers)-1)+1) * gsl_ran_binomial_pdf (t, y[i]*yy[dest]/(1+y[i]*yy[dest]),layers);//
+				}else{   
+                    p = 1 - z[i]*zz[j]*(pow(1+y[i]*yy[j],layers)-1)/(z[i]*zz[j]*(pow(1+y[i]*yy[j],layers)-1)+1);
+				}
+            }		
+		    if(p>0) S+= log(p);
+        }
+	}
+	if(opt_dir<0) S =S/2.;
+	return -S;  
+}
+
+
+
+
+
+
+
+
+/****************************************************************************
+ * Indices *
+ ****************************************************************************/
+double w_graph_compute_sorensen(W_GRAPH* WG, W_GRAPH* WGoriginal, int N_nodes){
+	int i,j,ncc;
+	double soren=0;
+	int norm = w_graph_total_weight(WG,N_nodes);
+	norm += w_graph_total_weight(WGoriginal,N_nodes);
+	int* ts = cast_vec_int(N_nodes); // dummy vector
+	for(i=0;i<N_nodes;i++)
+	{
+		ncc = 0;
+		for(j=0;j<WGoriginal->node[i].kout;j++)
+		{
+			ts[WGoriginal->node[i].out[j]] =  WGoriginal->node[i].w_out[j];
+		}
+		for(j=0;j<WG->node[i].kout;j++)
+		{
+			ncc+= mineq_int(WG->node[i].w_out[j],ts[WG->node[i].out[j]]);
+		}
+		for(j=0;j<N_nodes;j++)
+		{
+			ts[j]=0;
+		}
+		soren +=(double)ncc;
+	}
+	return 2*soren/(double)norm;
+}
+double w_graph_compute_sorensen_av(W_GRAPH* WGoriginal, double** pij, int N_nodes, double T){
+	int i,j,ncc;
+	double soren=0;
+	double norm = sum_matrix_double(pij, N_nodes, N_nodes);
+	double norm2 = 0;
+	double t;
+	scale_matrix(pij, N_nodes, N_nodes, T/norm); // scale and normalize	
+	for(i=0;i<N_nodes;i++)
+	{
+		ncc = 0;
+		for(j=0;j<WGoriginal->node[i].kout;j++)
+		{
+			t = fmin((double)WGoriginal->node[i].w_out[j],pij[i][WGoriginal->node[i].out[j]]);
+			norm2 += pij[i][WGoriginal->node[i].out[j]];
+			norm2 += (double)WGoriginal->node[i].w_out[j];
+			soren +=t;
+		}
+	}
+	return 2*soren/norm2;
 }
 /****************************************************************************
  * aLL STATS *
@@ -965,10 +1981,17 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double
     //w(sin sout), w(kin,kout), w
     int **k=w_graph_compute_k(WG, N_nodes);
     int **s=w_graph_compute_s(WG, N_nodes);
-    int E;
+    int E,L;
+
+
+    int *w_zeros=w_graph_compute_w(WG, N_nodes, &L, 1);
+    int *p_zeros=w_graph_compute_p(WG, N_nodes, &L);
     int *w=w_graph_compute_w(WG, N_nodes, &E, -1);
-    double *wss=w_graph_compute_w_ss(WG, N_nodes, 1);
-    double *wkk=w_graph_compute_w_ss(WG, N_nodes, -1);
+
+	double *wss=w_graph_compute_wp_ss(WG, N_nodes, 1);
+    double *wkk=w_graph_compute_wp_ss(WG, N_nodes, -1);
+    double *wss_zeros=w_graph_compute_w_ss(WG, N_nodes, 1);
+
     char cadena[100];
     
     gsl_histogram* h1;
@@ -978,6 +2001,7 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double
     int xbins;
     double** yy;
     
+    /// w histogram /////
     sout=vec_int_to_double(w,E);
     int q=max_value_int(w,E);
     h1=histogram_double(sout,0,q,q,E);
@@ -1018,42 +2042,78 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double
         //free(pp[1]);
         //free(pp);
     }
+
+    /// exsiting weight as func of ss /////
     sout=vec_int_to_double(w,E);
     xranges=log_bins_double(0, max_value_double(wss,E) , bin_exp, &xbins);
     yy=y_of_x(wss, sout, xranges,  E,  xbins);
+	if(opt_dir>0)
+	{
+	    sprintf(cadena,"N%davs%8.5f_wp_s_oi.hist",N_nodes,av_k);
+	}else{
+	    sprintf(cadena,"N%davs%8.5f_undir_wp_s_oi.hist",N_nodes,av_k);
+	}
+    print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
+    free(sout);
+    free(wss);
+    free(xranges);
+    free_mat_double(yy,4);
+
+    /// existing weight as func of kk /////
+    sout=vec_int_to_double(w,E);
+    xranges=log_bins_double(0, max_value_double(wkk,E) , bin_exp, &xbins);
+    yy=y_of_x(wkk, sout, xranges,  E,  xbins);
+	if(opt_dir>0)
+	{
+	    sprintf(cadena,"N%davs%8.5f_wp_k_oi.hist",N_nodes,av_k);
+	}else{
+	    sprintf(cadena,"N%davs%8.5f_undir_wp_k_oi.hist",N_nodes,av_k);
+	}
+
+    print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
+    free(sout);
+    free(wkk);
+    free(xranges);
+    free_mat_double(yy,4);
+
+
+    /// average weight as func of ss /////
+    sout=vec_int_to_double(w_zeros,L);
+    xranges=log_bins_double(0, max_value_double(wss_zeros,L) , bin_exp, &xbins);
+    yy=y_of_x(wss_zeros, sout, xranges,  L,  xbins);
 	if(opt_dir>0)
 	{
 	    sprintf(cadena,"N%davs%8.5f_w_s_oi.hist",N_nodes,av_k);
 	}else{
 	    sprintf(cadena,"N%davs%8.5f_undir_w_s_oi.hist",N_nodes,av_k);
 	}
-    print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins-1);
+    print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
     free(sout);
-    free(wss);
     free(xranges);
     free_mat_double(yy,4);
 
-    sout=vec_int_to_double(w,E);
-    xranges=log_bins_double(0, max_value_double(wkk,E) , bin_exp, &xbins);
-    yy=y_of_x(wkk, sout, xranges,  E,  xbins);
+    /// conn prob as func of ss /////
+    sout=vec_int_to_double(p_zeros,L);
+    xranges=log_bins_double(0, max_value_double(wss_zeros,L) , bin_exp, &xbins);
+    yy=y_of_x(wss_zeros, sout, xranges,  L,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_w_k_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%davs%8.5f_p_s_oi.hist",N_nodes,av_k);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_w_k_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%davs%8.5f_undir_p_s_oi.hist",N_nodes,av_k);
 	}
-
-    print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins-1);
+    print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
     free(sout);
-    free(wkk);
+    free(wss_zeros);
     free(xranges);
-    free_mat_double(yy,4);
+    free_mat_double(yy,4);    
 
-    
 //// free all
     free_mat_int(s,2);
     free_mat_int(k,2);
     free(w);
+    free(w_zeros);
+    free(p_zeros);
     return;
 }
 
@@ -1093,34 +2153,34 @@ void w_graph_node_stats_ensemble(W_GRAPH* WG, int N_nodes, double** container, d
 		node_nonzero[i][0]+=1;
 		container[i][0]+=(double)k[0][i];
 		container2[i][0]+=(double)k[0][i]*k[0][i];
-		container[i][2]+=(double)s[0][i];
-		container2[i][2]+=(double)s[0][i]*s[0][i];
-		container[i][3]+=(double)y2[0][i];
-		container2[i][3]+=(double)y2[0][i]*y2[0][i];
-		container[i][4]+=(double)kk_n[1][i];
-		container2[i][4]+=(double)kk_n[1][i]*kk_n[1][i];
-		container[i][5]+=(double)kkw_n[1][i];
-		container2[i][5]+=(double)kkw_n[1][i]*kkw_n[1][i];
-		container[i][6]+=(double)ss_n[1][i];
-		container2[i][6]+=(double)ss_n[1][i]*ss_n[1][i];
+		container[i][1]+=(double)s[0][i];
+		container2[i][1]+=(double)s[0][i]*s[0][i];
+		container[i][2]+=(double)y2[0][i];
+		container2[i][2]+=(double)y2[0][i]*y2[0][i];
+		container[i][3]+=(double)kk_n[1][i];
+		container2[i][3]+=(double)kk_n[1][i]*kk_n[1][i];
+		container[i][4]+=(double)kkw_n[1][i];
+		container2[i][4]+=(double)kkw_n[1][i]*kkw_n[1][i];
+		container[i][5]+=(double)ss_n[1][i];
+		container2[i][5]+=(double)ss_n[1][i]*ss_n[1][i];
 
 	    }
 	    if(s[1][i] > 0)
 	    {
 		//assert(s[1][i]>=k[1][i]);
 		node_nonzero[i][1]+=1;
-		container[i][7]+=(double)k[1][i];
-		container2[i][7]+=(double)k[1][i]*k[1][i];
-		container[i][9]+=(double)s[1][i];
-		container2[i][9]+=(double)s[1][i]*s[1][i];
-		container[i][10]+=(double)y2[1][i];
-		container2[i][10]+=(double)y2[1][i]*y2[1][i];
-		container[i][11]+=(double)kk_n[2][i];
-		container2[i][11]+=(double)kk_n[2][i]*kk_n[2][i];
-		container[i][12]+=(double)kkw_n[2][i];
-		container2[i][12]+=(double)kkw_n[2][i]*kkw_n[2][i];
-		container[i][13]+=(double)ss_n[2][i];
-		container2[i][13]+=(double)ss_n[2][i]*ss_n[2][i];
+		container[i][6]+=(double)k[1][i];
+		container2[i][6]+=(double)k[1][i]*k[1][i];
+		container[i][7]+=(double)s[1][i];
+		container2[i][7]+=(double)s[1][i]*s[1][i];
+		container[i][8]+=(double)y2[1][i];
+		container2[i][8]+=(double)y2[1][i]*y2[1][i];
+		container[i][9]+=(double)kk_n[2][i];
+		container2[i][9]+=(double)kk_n[2][i]*kk_n[2][i];
+		container[i][10]+=(double)kkw_n[2][i];
+		container2[i][10]+=(double)kkw_n[2][i]*kkw_n[2][i];
+		container[i][11]+=(double)ss_n[2][i];
+		container2[i][11]+=(double)ss_n[2][i]*ss_n[2][i];
 	    }
     	}
     }else{
@@ -1131,10 +2191,10 @@ void w_graph_node_stats_ensemble(W_GRAPH* WG, int N_nodes, double** container, d
 	    	{
 	    		if(s[0][i] > 0)
 	    		{		
-					container[i][7]+=c[0][i];
-					container2[i][7]+=c[0][i]*c[0][i];
-					container[i][8]+=c[1][i];
-					container2[i][8]+=c[1][i]*c[1][i];
+					container[i][6]+=c[0][i];
+					container2[i][6]+=c[0][i]*c[0][i];
+					container[i][7]+=c[1][i];
+					container2[i][7]+=c[1][i]*c[1][i];
 	    		}
 	    	}
 	    	free_mat_double(c,2);
@@ -1147,16 +2207,16 @@ void w_graph_node_stats_ensemble(W_GRAPH* WG, int N_nodes, double** container, d
 				node_nonzero[i][0]+=1;
 				container[i][0]+=(double)k[0][i];
 				container2[i][0]+=(double)k[0][i]*k[0][i];
-				container[i][2]+=(double)s[0][i];
-				container2[i][2]+=(double)s[0][i]*s[0][i];
-				container[i][3]+=(double)y2[0][i];
-				container2[i][3]+=(double)y2[0][i]*y2[0][i];
-	    		container[i][4]+=(double)kk_n[0][i];
-				container2[i][4]+=(double)kk_n[0][i]*kk_n[0][i];
-				container[i][5]+=(double)kkw_n[0][i];
-				container2[i][5]+=(double)kkw_n[0][i]*kkw_n[0][i];
-				container[i][6]+=(double)ss_n[0][i];
-				container2[i][6]+=(double)ss_n[0][i]*ss_n[0][i];
+				container[i][1]+=(double)s[0][i];
+				container2[i][1]+=(double)s[0][i]*s[0][i];
+				container[i][2]+=(double)y2[0][i];
+				container2[i][2]+=(double)y2[0][i]*y2[0][i];
+	    		container[i][3]+=(double)kk_n[0][i];
+				container2[i][3]+=(double)kk_n[0][i]*kk_n[0][i];
+				container[i][4]+=(double)kkw_n[0][i];
+				container2[i][4]+=(double)kkw_n[0][i]*kkw_n[0][i];
+				container[i][5]+=(double)ss_n[0][i];
+				container2[i][5]+=(double)ss_n[0][i]*ss_n[0][i];
 /*
 		container[i][4]+=(double)xy[0][i]; // x
 		container2[i][4]+=(double)xy[0][i]*(double)xy[0][i];
@@ -1184,7 +2244,7 @@ void w_graph_node_stats_ensemble_print(int reps, int N_nodes, double* Tcont, dou
     char cadena[100];
     int i,j;
     //printf("i am printing\n");fflush(stdout);
-    scale_vec_double(Tcont,1./reps,2);
+    scale_vec_double(Tcont,1./(double)reps,2);
     //average_matrix(cont, N_nodes, len_acc, reps);
     //average_matrix(cont2, N_nodes, len_acc, reps);
     ///// Only over existing but not for degrees or strengths!!!! ////
@@ -1193,51 +2253,51 @@ void w_graph_node_stats_ensemble_print(int reps, int N_nodes, double* Tcont, dou
     {
 	if (opt_dir==1)
 	{
-	    for(j=0;j<3;j++)
+	    for(j=0;j<2;j++) // s and k
 	    {
-		cont[i][j]=cont[i][j]/reps;
-		cont2[i][j]=cont2[i][j]/reps;
+		cont[i][j]=cont[i][j]/(double)reps;
+		cont2[i][j]=cont2[i][j]/(double)reps;
 	    }	    
-	    for(j=len_acc/2;j<len_acc/2+3;j++)
+	    for(j=len_acc/2;j<len_acc/2+2;j++) // s and k
 	    {
-		cont[i][j]=cont[i][j]/reps;
-		cont2[i][j]=cont2[i][j]/reps;
-	    }	
+		cont[i][j]=cont[i][j]/(double)reps;
+		cont2[i][j]=cont2[i][j]/(double)reps;
+	    }
 	    
-	    for(j=3;j<len_acc/2;j++)
+	    for(j=2;j<len_acc/2;j++)
 	    {
 			if(node_nonzero[i][0]>0)
 			{
-				cont[i][j]=cont[i][j]/node_nonzero[i][0];
-				cont2[i][j]=cont2[i][j]/node_nonzero[i][0];
+				cont[i][j]=cont[i][j]/(double)node_nonzero[i][0];
+				cont2[i][j]=cont2[i][j]/(double)node_nonzero[i][0];
 			}else{
 				cont[i][j]=0;
 				cont2[i][j]=0;
 			}
 	    }	    
-	    for(j=len_acc/2+3;j<len_acc;j++)
+	    for(j=len_acc/2+2;j<len_acc;j++)
 	    {
 			if(node_nonzero[i][1]>0)
 			{
-				cont[i][j]=cont[i][j]/node_nonzero[i][1];
-				cont2[i][j]=cont2[i][j]/node_nonzero[i][1];
+				cont[i][j]=cont[i][j]/(double)node_nonzero[i][1];
+				cont2[i][j]=cont2[i][j]/(double)node_nonzero[i][1];
 			}else{
 				cont[i][j]=0;
 				cont2[i][j]=0;
 			}
 	    }	
 	}else{
-	    for(j=0;j<3;j++)
+	    for(j=0;j<2;j++)
 	    {
-		cont[i][j]=cont[i][j]/reps;
-		cont2[i][j]=cont2[i][j]/reps;
+		cont[i][j]=cont[i][j]/(double)reps;
+		cont2[i][j]=cont2[i][j]/(double)reps;
 	    }	    
-	    for(j=3;j<len_acc;j++)
+	    for(j=2;j<len_acc;j++)
 	    {
 			if(node_nonzero[i][0]>0)
 			{
-				cont[i][j]=cont[i][j]/node_nonzero[i][0];
-				cont2[i][j]=cont2[i][j]/node_nonzero[i][0];
+				cont[i][j]=cont[i][j]/(double)node_nonzero[i][0];
+				cont2[i][j]=cont2[i][j]/(double)node_nonzero[i][0];
 			}else{
 				cont[i][j]=0;
 				cont2[i][j]=0;
@@ -1255,12 +2315,12 @@ void w_graph_node_stats_ensemble_print(int reps, int N_nodes, double* Tcont, dou
     fprintf(fil,"# <T>=%f+-%f # \n",Tcont[0] ,sqrt(Tcont[1]-Tcont[0]*Tcont[0]));
     if(opt_dir==1)
     {
-    	fprintf(fil,"# Node_num\tk\tk_anal\tsset\tY2\tk_nn\tk^w_nn\ts^w_nn (out) then (in) # \n");
+    	fprintf(fil,"# Node_num\tk\tsset\tY2\tk_nn\tk^w_nn\ts^w_nn (out) then (in) # \n");
     }else{
-	fprintf(fil,"# Node_num\tk\tk_anal\tsset\tY2\tk_nn\tk^w_nn\ts^w_nn (optionally \tc\tc^w) # \n");
+	fprintf(fil,"# Node_num\tk\tsset\tY2\tk_nn\tk^w_nn\ts^w_nn (optionally \tc\tc^w) # \n");
     }
     //int i,j;
-    double** node_atts=cast_mat_double(len_acc,N_nodes);
+    //double** node_atts=cast_mat_double(len_acc,N_nodes);
     for(i=0;i<N_nodes;i++)
     {
         fprintf(fil,"%d",i);
@@ -1269,7 +2329,7 @@ void w_graph_node_stats_ensemble_print(int reps, int N_nodes, double* Tcont, dou
     	for(j=0;j<len_acc;j++)        
     	{
 	    fprintf(fil," %f %f",cont[i][j],sqrt(cont2[i][j]-cont[i][j]*cont[i][j]));
-	    node_atts[j][i] = cont[i][j];
+	    //node_atts[j][i] = cont[i][j];
 	}
 	    fprintf(fil,"\n");
     }
@@ -1308,8 +2368,12 @@ void w_graph_node_stats_ensemble_print(int reps, int N_nodes, double* Tcont, dou
 gsl_histogram ** w_graph_all_stats_ensemble_allocate(int dir, int s_min, int s_max, int k_min, int k_max, int w_max){
 	int len_acc=2;
 	int bins;
-	bins=w_max;
-	/*
+	if(w_max>1e7)
+	{
+		bins = 10000000;
+	}else{
+		bins=w_max;
+	}	/*
 	if(dir==1) 
 	{
 		len_acc=10;
@@ -1413,3 +2477,251 @@ void w_graph_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, in
 	return;
 }
 
+/****************************************************************************
+ * Other funcs *
+ ****************************************************************************/
+
+double w_graph_compute_rho(double E_av, double T, int opt_indist){
+    double rho;
+	if(opt_indist<=0) // ME
+	{
+		double x = - (double)T/E_av * exp(-(double)T/E_av);
+		//printf("x:%f tplus:%f\n",gsl_sf_lambert_W0 (x),(double)T/E_av);fflush(stdout);
+		rho = gsl_sf_lambert_W0 (x) + (double)T/E_av;
+	}else{ //W,AW
+		rho = 1. - E_av / (double)T; // 1-p = E/T
+	}
+	return rho;
+}
+
+
+/****************************************************************************
+ * Transformations *
+ ****************************************************************************/
+double** w_graph_to_adj_matrix(W_GRAPH* WG, int N_nodes){
+	double** wij = cast_mat_double(N_nodes,N_nodes);
+	int i,j;
+	for(i=0;i<N_nodes;i++)
+	{
+		for(j=0;j<WG->node[i].kout;j++)
+			wij[i][WG->node[i].out[j]] = (double)WG->node[i].w_out[j];
+	}
+	return wij;
+}
+
+
+
+/****************************************************************************
+ * Graph Filtering *
+ ****************************************************************************/
+W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, double gamma, int mode, int M){
+    // filters graph if t in in confidence bounds according to C.I gamma //
+	int i,j;
+    int id_node;
+    double mu;
+    int t;
+    int tot = 0;
+    int etot = 0;
+    int* l;
+    int theta;
+    assert(gamma<=1);
+    assert(gamma>=0);
+    W_GRAPH* WGf = w_graph_alloc(N_nodes);
+    if((mode<0)||(mode>2))
+    {
+        printf("Invalid mode. Must be 0 (ME), 1(B) or 2(W). Aborting...\n");
+        abort();
+    }
+    double T = (double)w_graph_total_weight(WG, N_nodes);
+    double E = (double)w_graph_total_edges(WG, N_nodes);
+	for(i=0;i<N_nodes;i++)
+	{
+		for(j=0;j<WG->node[i].kout;j++)
+        {
+            id_node = WG->node[i].out[j];
+            t = WG->node[i].w_out[j];
+            mu = x[i]*y[id_node];
+            // if theta==1 keep, else, not keep
+            if(mu==0)
+            {
+                theta = 1; // surely not in interval, keep
+            }else{
+                l = find_tmintmax_xy(mu,gamma,mode,M);                
+                if((l[0]<0)&&(l[1]<0))
+                {
+                    theta = 0; // surely in interval, do not keep
+                }else{
+                    if((t>=l[0])&&(t<=l[1])) // in interval (at most with gamma% chance)
+                    {
+                        // |_1 gamma |_2 --> prob outside <1-gamma
+                        theta=0; // do not keep
+                    }else{
+                        theta=1; // keep
+                    }
+                }
+            }
+            if(theta==1) // if not in interval, keep
+            {
+                //if(t>50)printf("t:%d mu:%f tmin:%d tmax:%d\n",t,mu,l[0],l[1]);
+                w_graph_add_multi_link(WGf, N_nodes, i, id_node, t);
+                tot+=t;
+                etot+=1;
+            }
+        }
+    }
+    printf("\tTotal number of units after filtering: events: %d (f:%.5f) | edges:%d (f:%.5f) \n",tot,(double)tot/T,etot,(double)etot/E);
+    return WGf;
+}
+
+
+
+int* find_tmintmax_xy(double xy, double gamma, int mode, int M)
+{
+    assert(gamma<=1);
+    assert(gamma>=0);
+    // finds T such that p(x<=T) = gamma;
+    int* tt = cast_vec_int(2);
+    double mu,p,P0;
+    int l1,l2,k,aux;
+    int t;
+    //int c;
+    // mode selection //
+    if (mode==0)
+    {
+        mu = xy;
+        t = (int)round(mu);
+        tt[0] = t;
+        tt[1] = t;        
+        if(mu<=t) // forward
+        {
+            k=1;
+            l1 = t;
+            l2 = t-1;
+        }else{
+            k=-1;
+            l1 = t+1;
+            l2 = t;
+        }
+        P0 = 0;
+        //c = 0;
+        //if(mu>100)printf("c :%d t:%d xy:%f k:%d aux:%d l1:%d l2:%d P0:%f Gamma:%f\n",c,t,xy,k,aux,l1,l2,P0,gamma);
+        while(P0<gamma)
+        {
+            if(k>0) // forward
+            {
+                aux = l1;
+                l1= l1 + 1;
+                k=-k;
+            }else{ // backwards
+                aux = l2;
+                l2= l2 - 1;
+                if(l2<0)
+                {
+                    k=1; // if non negative, keep positive
+                }else{
+                    k=-k;
+                }
+            }
+            P0 += gsl_ran_poisson_pdf(aux,mu);                
+            //c++;
+            if(fabs(aux-mu)>10*sqrt(mu)) // 10 std away!
+            {
+                l1 = -1;
+                l2 = -1;
+                break; //break if too large
+            }
+            //if(mu>100)printf("c :%d t:%d aux:%d xy:%f k:%d P0:%f Gamma:%f\n",c,t,aux,xy,k,P0,gamma);
+        }
+    }else if(mode==1){
+        mu = M*(xy/(1+xy));        
+        p = xy/(1+xy);
+        t = (int)round(mu);
+        tt[0] = t;
+        tt[1] = t;        
+        if(mu<=t) // forward
+        {
+            k=1;
+            l1 = t;
+            l2 = t-1;
+        }else{
+            k=-1;
+            l1 = t+1;
+            l2 = t;
+        }
+        P0 = 0;
+        while(P0<gamma)
+        {
+            if(k>0) // forward
+            {
+                aux = l1;
+                l1+=1;
+                k=-k;
+            }else{ // backwards
+                aux = l2;
+                l2-=1;
+                if(l2<0)
+                {
+                    k=1; // if non negative, keep positive
+                }else{
+                    k=-k;
+                }
+            }
+            P0 += gsl_ran_binomial_pdf(aux,p,M);
+            if(fabs(aux-mu)>10*sqrt(mu/(1+xy))) // 10 std away!
+            {
+                l1 = -1;
+                l2 = -1;
+                break; //break if too large
+            }
+        }
+    }else{
+        mu = M*xy/(1.-xy);        
+        p = (1.-xy);
+        t = (int)round(mu-xy/p);
+        tt[0] = t;
+        tt[1] = t;        
+        if(mu<=t) // forward
+        {
+            k=1;
+            l1 = t;
+            l2 = t-1;
+        }else{
+            k=-1;
+            l1 = t+1;
+            l2 = t;
+        }
+        P0 = 0;
+        while(P0<gamma)
+        {
+            if(k>0) // forward
+            {
+                aux = l1;
+                l1+=1;
+                k=-k;
+            }else{ // backwards
+                aux = l2;
+                l2-=1;
+                if(l2<0)
+                {
+                    k=1; // if non negative, keep positive
+                }else{
+                    k=-k;
+                }
+            }
+            P0 += gsl_ran_negative_binomial_pdf(aux,p,M); 
+            // --> think about this! p(k) = {\Gamma(n + k) \over \Gamma(k+1) \Gamma(n) } p^n (1-p)^k
+            if(fabs(aux-mu)>10*sqrt(mu/p)) // 10 std away!
+            {
+                l1 = -1;
+                l2 = -1;
+                break; //break if too large
+            }
+        }
+    }
+	//printf("mu:%f t:%d xy:%f k:%d aux:%d l1:%d l2:%d P0:%f Gamma:%f\n",mu,t,xy,k,aux,l1,l2,P0,gamma);
+    //printf("FInal values: %d %d %f\n",tt[0]-l2,tt[1]+l1,mu);
+    tt[0] = l2;
+    if(l2<0) tt[0]=0;
+    tt[1] = l1;
+    return tt;
+}

@@ -31,5 +31,6 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
 gsl_histogram ** w_graph_dist_all_stats_ensemble_allocate(int dir, double d_max, int w_max);
 void w_graph_dist_all_stats_ensemble_update(gsl_histogram** acc, W_GRAPH* WG, int N_nodes, int dir,double** dist);
 void w_graph_dist_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, int N_nodes, double av_k, int opt_dir);
-
+/******* Net entropy ******/
+double w_graph_entropy_poisson_dist(W_GRAPH* WG, double** x,int N_nodes, double** dist, double gamma, int opt_self, int opt_dir);
 #endif

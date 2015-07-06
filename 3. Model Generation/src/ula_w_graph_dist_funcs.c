@@ -272,10 +272,16 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     //w(sin sout), w(kin,kout), w
     int **k=w_graph_compute_k(WG, N_nodes);
     int **s=w_graph_compute_s(WG, N_nodes);
-    int E,E2,E3,q;
+    int E,E2,E3,q,L;
     int *w=w_graph_compute_w(WG, N_nodes, &E, -1);
-    double *wss=w_graph_compute_w_ss(WG, N_nodes, 1);
-    double *wkk=w_graph_compute_w_ss(WG, N_nodes, -1);
+    int *w_zeros=w_graph_compute_w(WG, N_nodes, &L, 1);
+    int *p_zeros=w_graph_compute_p(WG, N_nodes, &L);
+
+    double *wss=w_graph_compute_wp_ss(WG, N_nodes, 1);
+    double *wkk=w_graph_compute_wp_ss(WG, N_nodes, -1);
+    double *wss_zeros=w_graph_compute_w_ss(WG, N_nodes, 1);
+
+	
 	double* d_edges= w_graph_dist_compute_d_edges(WG, dist, N_nodes, &E2);
 	double* d_trips= w_graph_dist_compute_d_trips(WG, dist, N_nodes, &E3);
 	double* s_in_d = w_graph_dist_compute_s_in_edges(WG, N_nodes);
@@ -295,6 +301,7 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     int xbins;
     double** yy;
     
+    /// w histogram /////
     sout=vec_int_to_double(w,E);
     q=max_value_int(w,E);
     h1=histogram_double(sout,0,q,q,E);
@@ -309,7 +316,7 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     print_acc(cadena, h1, h1);
     gsl_histogram_free(h1);
 
-
+    /// edge distance histogram /////
     //double q2=max_value_double(d_edges,E);
     //h1=histogram_double(d_edges,0,q2,200,E2);
 	h1=histogram_double(d_edges,0,dmax,100,E2);
@@ -324,6 +331,7 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     print_acc(cadena, h1, h1);
     gsl_histogram_free(h1);
 
+    /// trip distance histogram /////
     //h1=histogram_double(d_trips,0,q2,200,E3);
     h1=histogram_double(d_trips,0,dmax,100,E3);
 	//normalize_gsl_hist(h1);	// we don't normalize it so we compare trips to raw edges
@@ -338,7 +346,7 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     gsl_histogram_free(h1);
 
 
-	//// p_ij
+    /// connection probability as func of distance /////
 	h1 = w_graph_dist_compute_pij(WG, dist, 100, N_nodes, dmax, self_opt, opt_dir);
 	if(opt_dir>0)
 	{
@@ -350,12 +358,13 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
 	gsl_histogram_free(h1);
 
 
+    /// exsiting weight as func of ss /////
     sout=vec_int_to_double(w,E);
     xranges=log_bins_double(0, max_value_double(wss,E) , bin_exp, &xbins);
     yy=y_of_x(wss, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_w_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%davs%8.5f_wp_s_oi.hist",N_nodes,av_k);
 	}else{
 	    sprintf(cadena,"N%davs%8.5f_undir_w_s_oi.hist",N_nodes,av_k);
 	}
@@ -365,12 +374,13 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     free(xranges);
     free_mat_double(yy,4);
 
+    /// exsiting weight as func of kk /////
     sout=vec_int_to_double(w,E);
     xranges=log_bins_double(0, max_value_double(wkk,E) , bin_exp, &xbins);
     yy=y_of_x(wkk, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_w_k_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%davs%8.5f_wp_k_oi.hist",N_nodes,av_k);
 	}else{
 	    sprintf(cadena,"N%davs%8.5f_undir_w_k_oi.hist",N_nodes,av_k);
 	}
@@ -380,6 +390,40 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     free(xranges);
     free_mat_double(yy,4);
 
+    /// average weight as func of ss /////
+    sout=vec_int_to_double(w_zeros,L);
+    xranges=log_bins_double(0, max_value_double(wss_zeros,L) , bin_exp, &xbins);
+    yy=y_of_x(wss_zeros, sout, xranges,  L,  xbins);
+	if(opt_dir>0)
+	{
+	    sprintf(cadena,"N%davs%8.5f_w_s_oi.hist",N_nodes,av_k);
+	}else{
+	    sprintf(cadena,"N%davs%8.5f_undir_w_s_oi.hist",N_nodes,av_k);
+	}
+    print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
+    free(sout);
+    free(xranges);
+    free_mat_double(yy,4);
+
+    /// conn prob as func of ss /////
+    sout=vec_int_to_double(p_zeros,L);
+    xranges=log_bins_double(0, max_value_double(wss_zeros,L) , bin_exp, &xbins);
+    yy=y_of_x(wss_zeros, sout, xranges,  L,  xbins);
+	if(opt_dir>0)
+	{
+	    sprintf(cadena,"N%davs%8.5f_p_s_oi.hist",N_nodes,av_k);
+	}else{
+	    sprintf(cadena,"N%davs%8.5f_undir_p_s_oi.hist",N_nodes,av_k);
+	}
+    print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
+    free(sout);
+    free(wss_zeros);
+    free(xranges);
+    free_mat_double(yy,4);  
+
+
+
+    /// exsiting weight as func of s_in /////
     sout=vec_int_to_double(w,E);
     xranges=log_bins_double(0, max_value_double(s_in_d,E) , bin_exp, &xbins);
     yy=y_of_x(s_in_d, sout, xranges,  E,  xbins);
@@ -395,6 +439,7 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     free(xranges);
     free_mat_double(yy,4);
 
+    /// exsiting weight as func of s_out /////
     sout=vec_int_to_double(w,E);
     xranges=log_bins_double(0, max_value_double(s_out_d,E) , bin_exp, &xbins);
     yy=y_of_x(s_out_d, sout, xranges,  E,  xbins);
@@ -422,6 +467,7 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     free_mat_double(yy,4);
 	*/
 
+    /// exsiting weight as func of d /////
     sout=vec_int_to_double(w,E);
     xranges=log_bins_double(0, dmax , 1.05, &xbins);
     yy=y_of_x(d_edges, sout, xranges,  E,  xbins);
@@ -441,6 +487,8 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     free_mat_int(s,2);
     free_mat_int(k,2);
     free(w);
+    free(w_zeros);
+    free(p_zeros);
 	free(d_trips);
 	free(d_edges);
     return;
@@ -452,7 +500,12 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
 gsl_histogram ** w_graph_dist_all_stats_ensemble_allocate(int dir, double d_max, int w_max){
 	int len_acc=6; // P(w),p(delta_r),p(delta_r)_Edges,
 	int bins;
-	bins=w_max;
+	if(w_max>1e5)
+	{
+		bins = 100000;
+	}else{
+		bins=w_max;
+	}
 	//P(w)
 	gsl_histogram ** acc = (gsl_histogram**)malloc(sizeof(gsl_histogram*)*len_acc);
 	acc[0] = set_acc_double(0,w_max,bins);
@@ -533,17 +586,66 @@ void w_graph_dist_all_stats_ensemble_print(gsl_histogram** acc, int len, int rep
 	}else{
 		sprintf(cadena,"N%davs%8.5f_undir_ens_r%d_d_edges.hist",N_nodes,av_k,reps);
 	}
-	print_acc(cadena, acc[2], acc[3]);
+	print_acc(cadena, acc[4], acc[5]);
 	if(opt_dir>0)
 	{
 		sprintf(cadena,"N%davs%8.5f_ens_r%d_d_trips.hist",N_nodes,av_k,reps);
 	}else{
 		sprintf(cadena,"N%davs%8.5f_undir_ens_r%d_d_trips.hist",N_nodes,av_k,reps);
 	}
-	print_acc(cadena, acc[4], acc[5]);
+	print_acc(cadena, acc[2], acc[3]);
 
 	//Free all
 	acc_free_all(acc, len);
 	return;
 }
 
+/**************************/
+/******* Net entropy ******/
+/**************************/
+
+double w_graph_entropy_poisson_dist(W_GRAPH* WG, double** x,int N_nodes, double** dist, double gamma, int opt_self, int opt_dir){
+	double S,p,mu;
+	int i,j,t;
+	int out_d,in_d;
+    double *y;
+    double *yy;
+	S = 0;
+    if(opt_dir>0)
+    {
+        y = x[0];
+        yy = x[1];
+    }else{
+        y = x[0];
+        yy = x[0];
+    }
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                out_d=maxeq_int(i,j);
+				in_d=mineq_int(i,j);
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = y[i]*yy[j]*exp(-gamma*dist[out_d][in_d]);
+                if(mu>0)
+				{
+					p = gsl_ran_poisson_pdf (t, mu);
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 0;
+				}
+				S+= p*log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}

@@ -5,11 +5,11 @@
 #include <stdlib.h>
 #include <math.h>
 #include <assert.h>
-
 /****** File handling ********/
 FILE* open_file(char *mode,char *nom);
 
 int* safe_int_realloc(int* vect, int len, int new_len, int zero_val);
+double* safe_double_realloc(double* vect, int len, int new_len, double zero_val);
 void* xrealloc(void* vector, size_t midaenbytes);
 /****** Number handling ********/
 int mineq_int(int a, int b);
@@ -36,6 +36,16 @@ int* vec_double_to_int(double* vect, int len);
 double * vec_int_to_double(int* vect, int len);
 void scale_vec_int(int* vect, int factor, int len);
 void scale_vec_double(double* vect, double factor, int len);
+/****** Ordering vectors *****/
+int comparesg(const void *_a, const void *_b);
+int comparegs(const void *_a, const void *_b);
+int comparegs_int(const void *_a, const void *_b);
+int comparesg_int(const void *_a, const void *_b);
+void order_vector_sg_double(int size,double* data);
+void order_vector_gs_double(int size,double* data);
+void order_vector_gs_int(int size,int* data);
+void order_vector_sg_int(int size,int* data);
+double max_value_double_k(double* vect, int len, int k);
 /****** Matrix handling ********/
 void free_mat_int(int **mat_d, int rows);
 void free_mat_double(double **mat_d, int rows);
@@ -54,5 +64,4 @@ void average_matrix(double** matrix, int rows, int cols, int reps);
 void scale_matrix(double** matrix, int rows, int cols, double reps);
 int sum_matrix_int(int** matrix, int rows, int cols);
 double sum_matrix_double(double** matrix, int rows, int cols);
-
 #endif

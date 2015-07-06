@@ -187,7 +187,7 @@ def fit_gamma(sin,sout,C,d,tol_s=1e-9,tol_gamma=1e-9,maxreps=1000,max_rej=100,fa
 #### distance checkers ####
 def dist_check_s(x,y,gamma,sout,sin,d,selfs=True):
     """
-        Computes distance between prediction and reality for distances
+        Computes absolute distance between prediction and reality for distances
         x,y --> arrays of lagrange multpliers
         gamma: distance multiplier
         sout,sin -- > real strength sequences
@@ -200,9 +200,9 @@ def dist_check_s(x,y,gamma,sout,sin,d,selfs=True):
     else:
         extra1=0
         extra2=0
-    gradin = np.sum(sin-y*(np.einsum('i,ij',x,np.exp(-d*gamma))-extra1))
-    gradout = np.sum(sout-x*(np.einsum('j,ij',y,np.exp(-d*gamma))-extra2))
-    return gradin,gradout
+    gradin = np.abs(sin-y*(np.einsum('i,ij',x,np.exp(-d*gamma))-extra1))
+    gradout = np.abs(sout-x*(np.einsum('j,ij',y,np.exp(-d*gamma))-extra2))
+    return gradin.sum(),gradout.sum()
 def dist_check_C(x,y,gamma,C,d,selfs=True):
     """
         Computes distance between prediction and reality for strengths

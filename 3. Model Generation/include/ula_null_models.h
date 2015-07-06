@@ -43,16 +43,31 @@ W_GRAPH* fixeds_poisson_directed_graph2(double**x,  int N_nodes , gsl_rng* randg
 //** Undistinguishable weights **//
 W_GRAPH* fixeds_geometric_undirected_graph2(double*x,  int N_nodes , gsl_rng* randgsl, int verbose, int self_opt);
 W_GRAPH* fixeds_geometric_directed_graph2(double**x,  int N_nodes , gsl_rng* randgsl, int verbose, int self_opt);
+W_GRAPH* fixeds_negbinomial_undirected_graph2(double*x,  int N_nodes , int layers, gsl_rng* randgsl, int verbose, int self_opt);
+W_GRAPH* fixeds_negbinomial_directed_graph2(double**x,  int N_nodes , int layers, gsl_rng* randgsl, int verbose, int self_opt);
+W_GRAPH* fixeds_binomial_undirected_graph2(double*x,  int N_nodes , int layers, gsl_rng* randgsl, int verbose, int self_opt);
+W_GRAPH* fixeds_binomial_directed_graph2(double**x,  int N_nodes , int layers, gsl_rng* randgsl, int verbose, int self_opt);
+
 /*********** Binary constraints **************/
 W_GRAPH* fixedk_poisson_undirected_graph(double*x,  double mu, int N_nodes , gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
 W_GRAPH* fixedk_poisson_directed_graph(double**x, double mu,  int N_nodes , gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
 W_GRAPH* fixedk_geometric_undirected_graph(double*x,  double mu, int N_nodes , gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
 W_GRAPH* fixedk_geometric_directed_graph(double**x, double mu,  int N_nodes , gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
+W_GRAPH* fixedk_negbinom_undirected_graph(double*x,  double mu,  int N_nodes ,int layers, gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
+W_GRAPH* fixedk_negbinom_directed_graph(double**x, double mu, int N_nodes , int layers, gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
+W_GRAPH* fixedk_binom_directed_graph(double**x, double mu,  int N_nodes , int layers, gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
+W_GRAPH* fixedk_binom_undirected_graph(double*x,  double mu, int N_nodes , int layers, gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
+W_GRAPH* fixedk_bernouilli_directed_graph(double**x, int N_nodes , gsl_rng* randgsl, int verbose, int self_opt);
+W_GRAPH* fixedk_bernouilli_undirected_graph(double*x, int N_nodes , gsl_rng* randgsl, int verbose, int self_opt);
+
 /*********** Linear&Binary constraints **************/
 W_GRAPH* fixedEs_poisson_undirected_graph(double*x,  double lam, int N_nodes , gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
 W_GRAPH* fixedEs_poisson_directed_graph(double**x,  double lam, int N_nodes , gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
+
 W_GRAPH* fixedks_poisson_undirected_graph(double**x, int N_nodes , gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
 W_GRAPH* fixedks_poisson_directed_graph(double**x, int N_nodes , gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
+W_GRAPH* fixedks_binomial_undirected_graph(double**x, int N_nodes , int layers, gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
+W_GRAPH* fixedks_binomial_directed_graph(double**x, int N_nodes , int layers, gsl_rng* randgsl, int verbose, int self_opt, int max_reps);
 /*********Distros of p's*******/
 double * prob_mult_s_undir(double* x, int N_nodes, int self_opt);
 double * prob_mult_s_dir(double** x, int N_nodes, int self_opt);

@@ -49,21 +49,55 @@ void* xrealloc(void* vector, size_t midaenbytes){
 }
 
 int* safe_int_realloc(int* vect, int len, int new_len, int zero_val){
-	assert(new_len>len);
 	int i;
 	int * new_vect = cast_vec_int(new_len);
-	//vect = xrealloc(vect,sizeof(int)*new_len);
-	for(i=0;i<len;i++)
+	if(new_len>len)
 	{
-		new_vect[i]=vect[i];
+		//vect = xrealloc(vect,sizeof(int)*new_len);
+		for(i=0;i<len;i++)
+		{
+			new_vect[i]=vect[i];
+		}
+		for(i=len;i<new_len;i++)
+		{
+			new_vect[i]=zero_val;
+		}	
+	}else{
+		//vect = xrealloc(vect,sizeof(int)*new_len);
+		for(i=0;i<new_len;i++)
+		{
+			new_vect[i]=vect[i];
+		}
 	}
-	for(i=len;i<new_len;i++)
-	{
-		new_vect[i]=zero_val;
-	}	
 	free(vect);
 	return new_vect;
 }
+
+double* safe_double_realloc(double* vect, int len, int new_len, double zero_val){
+	int i;
+	double * new_vect = cast_vec_double(new_len);
+	if(new_len>len)
+	{
+		//vect = xrealloc(vect,sizeof(int)*new_len);
+		for(i=0;i<len;i++)
+		{
+			new_vect[i]=vect[i];
+		}
+		for(i=len;i<new_len;i++)
+		{
+			new_vect[i]=zero_val;
+		}	
+	}else{
+		//vect = xrealloc(vect,sizeof(int)*new_len);
+		for(i=0;i<new_len;i++)
+		{
+			new_vect[i]=vect[i];
+		}
+	}
+	free(vect);
+	return new_vect;
+}
+
 
 
 /********************************************************************************
@@ -138,7 +172,7 @@ double * flatten_matrix_triangular_double(double** w, int rows, int * length){
 		}
 	}
 	*length=aux;
-	flat_w=realloc(flat_w,aux*sizeof(double)); // realloc memory
+	flat_w = safe_double_realloc(flat_w,rows*rows,aux,0);
 	return flat_w;
 }
 
@@ -169,7 +203,7 @@ int * flatten_sparse_matrix_int(int** w, int rows, int cols, int zeros, int * le
 				}
 			}
 		}
-		flat_w=realloc(flat_w,aux*sizeof(int)); // realloc memory
+		flat_w = safe_int_realloc(flat_w,rows*cols,aux,0);// realloc memory
 	}
 	(*length)=aux;
 return flat_w;
@@ -201,7 +235,7 @@ double * flatten_sparse_matrix_double(double** w, int rows, int cols, int zeros,
 				}
 			}
 		}
-		flat_w=realloc(flat_w,aux*sizeof(double)); // realloc memory
+		flat_w = safe_double_realloc(flat_w,rows*cols,aux,0);
 	}
 	(*length)=aux;
 return flat_w;
@@ -223,7 +257,7 @@ int * flatten_matrix_int(int** w, int rows, int cols, int diag, int * length){
 			}
 		}
 	}
-	flat_w=realloc(flat_w,aux*sizeof(int)); // realloc memory
+	flat_w = safe_int_realloc(flat_w,rows*cols,aux,0);// realloc memory
 	(*length)=aux;
 return flat_w;
 }
@@ -259,7 +293,7 @@ return flat_w;
 
 
 /********************************************************************************
- ********************************************************************************/
+ ****************** Max min ************************************/
 double matrix_max_value_double(double** vect, int row, int col){
 	int i,j;
 	double max_v=0;
@@ -309,6 +343,7 @@ int matrix_min_value_int(int** vect, int row, int col){
 	}
 	return max_v;
 }
+
 /********************************************************************************
  ********************************************************************************/
 
@@ -552,6 +587,102 @@ int min_value_int(int* vect, int len){
 }
 
 /********************************************************************************
+ ************************ Sortings *****************************************/
+
+/********************************************************************************
+ ********************************************************************************/
+// from greater to smaller
+int comparesg(const void *_a, const void *_b) {
+ 
+        double *a, *b;
+        
+        a = (double *) _a;
+        b = (double *) _b;
+        if (*a>*b) return 1;
+        else if ((*a)==(*b)) return 0;
+        else return -1;
+}
+
+// from smaller to greater
+int comparegs(const void *_a, const void *_b) {
+ 
+        double *a, *b;
+        
+        a = (double *) _a;
+        b = (double *) _b;
+        if (*a<*b) return 1;
+        else if ((*a)==(*b)) return 0;
+        else return -1;
+}
+
+int comparegs_int(const void *_a, const void *_b) {
+	
+	int *a, *b;
+	
+	a = (int *) _a;
+	b = (int *) _b;
+	if (*a<*b) return 1;
+	else if ((*a)==*b) return 0;
+	else return -1;
+}
+
+int comparesg_int(const void *_a, const void *_b) {
+	
+	int *a, *b;
+	
+	a = (int *) _a;
+	b = (int *) _b;
+	if (*a>*b) return 1;
+	else if ((*a)==*b) return 0;
+	else return -1;
+}
+
+// orderings
+void order_vector_sg_double(int size,double* data){
+	
+	qsort(data,size,sizeof(double),&comparesg);
+	return;
+}
+
+void order_vector_gs_double(int size,double* data){
+	
+	qsort(data,size,sizeof(double),&comparegs);
+	return;
+}
+
+void order_vector_gs_int(int size,int* data){
+	
+	qsort(data,size,sizeof(int),&comparegs_int);
+	return;
+}
+
+void order_vector_sg_int(int size,int* data){
+	
+	qsort(data,size,sizeof(int),&comparesg_int);
+	return;
+}
+
+
+double max_value_double_k(double* vect, int len, int k){
+	double max_k;
+	assert(k>0);
+	double* dum = cast_vec_double(len);
+	int i;
+	// copy
+	for(i=0;i<len;i++)
+	{
+		dum[i] = vect[i];
+	}
+	// sort
+	order_vector_gs_double(len,dum);
+	max_k = dum[k-1];
+	// free
+	free(dum);
+	return max_k;
+}
+
+
+/********************************************************************************
  ********************************************************************************/
 void scale_vec_int(int* vect, int factor, int len){
     int i;
@@ -623,7 +754,7 @@ int mineq_int(int a, int b){
 }
 
 
-double round(double d)
-{
-  return floor(d + 0.5);
-}
+//double round(double d)
+//{
+//  return floor(d + 0.5);
+//}

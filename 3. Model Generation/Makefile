@@ -23,11 +23,11 @@ CSRCS    = $(addprefix $(SRCDIR)/, $(CFILES))
 OBJDIR = src/obj
 OBJECTS  = $(addprefix $(OBJDIR)/, $(CFILES:%.c=%.o))
 
-all: $(OBJDIR) MultiEdgeGen
+all: $(OBJDIR) GenNetGen
 
-MultiEdgeGen: $(OBJDIR) $(OBJECTS)
-	@echo Linking MultiEdgeGen
-	@$(CC) $(OBJECTS) -o MultiEdgeGen $(LDFLAGS)
+GenNetGen: $(OBJDIR) $(OBJECTS)
+	@echo Linking GenNetGen
+	@$(CC) $(OBJECTS) -o GenNetGen $(LDFLAGS)
 
 
 $(OBJDIR):
@@ -40,7 +40,7 @@ $(OBJECTS): $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	@rm -rf $(OBJDIR) *~ src/*~ MultiEdgeGen
+	@rm -rf $(OBJDIR) *~ src/*~ GenNetGen
 
 # By default make understands that each rule refers to a file/directory.
 # By saying that "all" and "clean" rules are PHONY we are telling make

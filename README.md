@@ -7,15 +7,17 @@ ________________________________________________________________________________
 
 ## Introduction 
 
-The Origin-Destination Multi-Edge network package (ODME) is the set of 
+The Origin-Destination Multi-Edge network package (ODME) is a set of 
 codes that I have written during the development of my PhD thesis. It 
-is a package intended to be used for the analysis of an kind of 
-multi-edge network, focusing specially on spatial networks.
+is a package intended to be used for the analysis of many kinds of 
+networks, focusing specially on spatial, multi-edge networks.
 
 A multi-edge network is a weighted network composed of 
 distinguishable, integer weights. A paradigmatic example of it are 
 Origin-Destination matrices used to represent flows between nodes or 
-locations.
+locations. The present package is able to analyze many types of any 
+general form of weighted networks (being binary networks a particular case of them), 
+be them spatial or not.
 
 The package is structured in three separated modules which perform 
 different operations. The first one is an analysis tool, while the 
@@ -37,7 +39,9 @@ the weights are integer numbers.
 	Sagarra O., Font-Clos F., Pérez-Vicente C. and Díaz-Guilera, A.
 	[Europhysics Letters](http://iopscience.iop.org/0295-5075/107/3/38002/article;jsessionid=D22CAAF312F43653DA0C1279853CBF0C.c3)
 
-[3] To be added
+[3] Supersampling and network reconstruction of urban mobility.
+	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
+	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
 
 
 
@@ -67,9 +71,18 @@ We would like to thank Pol Colomer and Sergio Oller for their very useful commen
 
 ## License
 
-Copyright 2014 Oleguer Sagarra.
+(C) Copyright 2014 Oleguer Sagarra.
 All rights reserved. 
 Code under License GPLv3.
+
+Each file in this folder is part of the ODME package. This code has no warranty whatsoever nor any kind of support is provided. 
+You are free to do what you like with this code as long as you leave this copyright in place. Please cite us if you use our software.
+
+ODME is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+ODME is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with the package. If not, see http://www.gnu.org/licenses/.
 
 
 ## Additional notes

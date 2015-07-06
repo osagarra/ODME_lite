@@ -95,7 +95,7 @@ int * histogram_int(int* vect, int minx, int maxx, int len ){
 		max_len=maxeq_int(vect[i],max_len);
 	    }
     }
-    hist=realloc(hist,sizeof(int)*max_len);
+    hist= safe_int_realloc(hist,maxx,max_len,0);
     return hist;
 }
 /********************/
@@ -191,29 +191,30 @@ gsl_histogram * histogram_double_log(double* vect, double minx, double maxx, dou
 }
 /****** 2 D ******/
 double** y_of_x(double* vectx, double* vecty, double* xrange, int len, int len_ranges){
+    order_vector_sg_double(len_ranges, xrange); // order just in case
     double** yy=cast_mat_double(4,len_ranges);
     int i,j;
     for(i=0;i<len;i++)
     {
-	for(j=0;j<len_ranges;j++)
-	{
-	    if(vectx[i]-xrange[j]<0)
-	    {
-		//printf("##### %lf %lf\n",vectx[i],xrange[j]);fflush(stdout);
-	    	yy[1][j-1]+=vecty[i];
-	    	yy[2][j-1]+=vecty[i]*vecty[i];
-	    	yy[3][j-1]+=1;
-		break;
-	    }
-	}
+		for(j=1;j<len_ranges;j++)
+		{
+			if(vectx[i]-xrange[j]<0)
+			{
+			//printf("##### %lf %lf\n",vectx[i],xrange[j]);fflush(stdout);
+				yy[1][j-1]+=vecty[i];
+				yy[2][j-1]+=vecty[i]*vecty[i];
+				yy[3][j-1]+=1;
+			break;
+			}
+		}
     }
     for(i=0;i<len_ranges-1;i++)
     {
     	yy[0][i]=xrange[i];
-	//yy[0][i]=(yy[0][i+1]-yy[0][i])/2. + yy[0][i];
-	yy[1][i]/=yy[3][i];
-	yy[2][i]=sqrt(yy[2][i]/yy[3][i]-(yy[1][i]*yy[1][i]));
-	//printf("%lf %lf %lf %lf\n",yy[0][i],yy[1][i],yy[2][i],yy[3][i]);fflush(stdout);
+		//yy[0][i]=(yy[0][i+1]-yy[0][i])/2. + yy[0][i];
+		yy[1][i]/=yy[3][i];
+		yy[2][i]=sqrt(yy[2][i]/yy[3][i]-(yy[1][i]*yy[1][i]));
+		//printf("%lf %lf %lf %lf\n",yy[0][i],yy[1][i],yy[2][i],yy[3][i]);fflush(stdout);
     }
     return yy;
 }
@@ -347,7 +348,7 @@ void histogram_2d_mean(gsl_histogram2d * hist, int axis, double * mean_v, double
 double * log_bins_double(double minx, double maxx, double expo, int * numbins){
     assert(minx<maxx);
     int i,check;
-    int max_ind=1000;
+    int max_ind=10000;
     double pos;
     double * bins= cast_vec_double(max_ind);
     double deltax=1.;
@@ -355,33 +356,34 @@ double * log_bins_double(double minx, double maxx, double expo, int * numbins){
     check=i=0;
     if(minx==0)
     {
-	bins[0]=0;
+		bins[0]=0;
     	pos=1.0000001;
     	i=1;
-	check++;
+		check++;
     }
     do
     {
-	bins[i]=pos;
-	deltax*=expo;
-	pos+=(deltax*expo);
-	i++;
-	check++;
-	if(check>max_ind)
-	{
-	    bins=realloc(bins,sizeof(double)*check*2); // doblem espai 
-	}
+		bins[i]=pos;
+		pos+=(deltax*expo);
+		deltax*=expo;
+		i++;
+		check++;
+		if(check>max_ind)
+		{
+			bins = safe_double_realloc(bins,check,check*2,0);
+		}
     	//printf("%lf,%lf %d\n",pos,deltax,check);fflush(stdout);
-	//printf("%lf\n",bins [i-1]);fflush(stdout);
-	}while(pos<maxx);
-    //bins[i-1]=maxx+maxx*0.1*(maxx-bins[i-2]);
-    bins[i-1]=maxx+1;
-    //printf("%lf %lf\n",bins[i-1],maxx);fflush(stdout);
-    bins=realloc(bins,sizeof(double)*check);
-    //printf("# Done %d bins\n",check);fflush(stdout);
-    //printf("# Bin 0: %lf\n",bins[0]);fflush(stdout);
+		//printf("%lf\n",bins [i-1]);fflush(stdout);
+	}while(pos<=maxx);
+	//bins[i-1]=maxx+maxx*0.1*(maxx-bins[i-2]);
+	//bins[i-1]=maxx+1;
+	//printf("%lf %lf\n",bins[i-1],maxx);fflush(stdout);
+	bins = safe_double_realloc(bins,2*check,check,0);
+	//printf("# Done %d bins\n",check);fflush(stdout);
+	//printf("# Bin 0: %lf\n",bins[0]);fflush(stdout);
     //printf("# Bin 1: %lf\n",bins[1]);fflush(stdout);
     *numbins=check;
+    order_vector_sg_double(check, bins);
     return bins;
 }
 /********************/
@@ -618,11 +620,11 @@ void print_hist_int(char *input_name, int len, int *av_hist){
 /*****************************************************/
 void print_hist2d_mean(char *input_name, double * h_mean, double * h_std, double * xrange, int len){
     FILE* input=open_file("w",input_name);
-    fprintf(input,"# X value, <Y>(x), sigma #\n");
+    fprintf(input,"# X_min value, x_max value, <Y|x>, sigma_{y|x} #\n");
     int i;
-    for(i=0;i<len;i++)
+    for(i=0;i<len-1;i++)
     {
-	fprintf(input,"%lf %lf %lf\n",xrange[i]+(xrange[i+1]-xrange[i])/2.,h_mean[i],h_std[i]);
+	fprintf(input,"%lf %lf %lf %lf\n",xrange[i],xrange[i+1],h_mean[i],h_std[i]);
     }
     fclose(input);
     return;

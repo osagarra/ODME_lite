@@ -10,8 +10,9 @@ If you use our software, please do cite us.
 
 ## References 
 
-[1] To be soon added
-
+[1] Supersampling and network reconstruction of urban mobility.
+	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
+	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
 
 ## Requirements and Installation
 
@@ -119,9 +120,9 @@ In:
 	s^w_nn^{in} = \sum_i t_{ij} s_i^{out} / s_j^{in}
 ```
 
-**w_s_io.hist and w_k_io.hist files**
+**w_s_io.hist, p_s_io.hist, wp_s_io.hist and wp_k_io.hist files**
 
-This files contain the graph-average existing occupation number as function of the product of strenghts or degrees in the format:
+This files contain the graph-average occupation number, existing occupation (w) number (wp) and binary connection probability (p) as function of the product of strenghts or degrees in the format:
 ```
 x^{out}_i*x^{in}_j \bar{t_ij} \std{\bar{t_ij}}
 ```
@@ -149,13 +150,13 @@ Graph average value of existing weights as a function of cost.
 
 The following command
 ```
-time ./net_analysis -N 94 -d 1 -f tests/sample.tr -z 0 -a tests/cost_matrix.dists  -h 1
+time ./MultiEdgeAnalyzer -N 1000 -d 1 -f ../tests/sample.tr -z 0 -a ../tests/cost_matrix.dists  -h 1
 ```
 takes on a intel® Core™ i5-2500 CPU @ 3.30GHz × 4 with 12 GM RAM the following time
 ```
-real	0m0.025s
-user	0m0.021s
-sys	0m0.003s
+real	0m0.258s
+user	0m0.165s
+sys	0m0.026s
 ```
 on a and generates the following files:
 
@@ -167,6 +168,8 @@ N94avs37746.57447_w_dij.hist		- Average weight as function of cost
 N94avs37746.57447_w_k_oi.hist		- Average Weight as a function of product of degrees
 N94avs37746.57447_w_s_i.hist		- Average Weight as a function of incoming strength
 N94avs37746.57447_w_s_o.hist		- Average Weight as a function of outgoing strength
+N94avs37746.57447_p_s_oi.hist		- Average binary connection probability as a function of product of strengths
+N94avs37746.57447_wp_s_oi.hist		- Average existing Weight as a function of product of strengths
 N94avs37746.57447_w_s_oi.hist		- Average Weight as a function of product of strengths
 N94avs37746.57447node_list.list		- List of node attributes
 N94avs37746.57447_w.hist			- Weight distribution P(w)
@@ -177,15 +180,18 @@ The undirected version of the algorithm produces equivalent files for the *in* a
 
 ## Acknowledgements
 
-We would like to thank Pol Colomer and Sergio Oller for their very useful comments and suggestions.
+I would like to thank Pol Colomer and Sergio Oller for their very useful comments and suggestions.
 
 
 
 ## License
 
-Copyright 2014 Oleguer Sagarra.
+(C) Copyright 2014 Oleguer Sagarra.
 All rights reserved. 
 Code under License GPLv3.
+
+This module is a part of the ODME package, and thus it is distributed under its same license (see main README).
+
 
 ## Roadmap
 
