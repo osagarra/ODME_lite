@@ -15,24 +15,10 @@ If you use our software, please do cite us.
 	Sagarra O., Pérez-Vicente C. and Díaz-Guilera, A.  Phys. Rev. E 88, 062806 (2013)
     [Physical Review E](http://pre.aps.org/abstract/PRE/v88/i6/e062806)
 
-<<<<<<< HEAD
 [2] Supersampling and network reconstruction of urban mobility.
 	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
 	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
-<<<<<<< HEAD
-=======
-[2] The configuration multi-edge model: Assessing the effect of fixing node strengths on weighted network magnitudes
-	Sagarra O., Font-Clos F., Pérez-Vicente C. and Díaz-Guilera, A.
-	[Europhysics Letters](http://iopscience.iop.org/0295-5075/107/3/38002/article;jsessionid=D22CAAF312F43653DA0C1279853CBF0C.c3)
-
-[3] Supersampling and network reconstruction of urban mobility.
-	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
-	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
-
->>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b
-=======
     [PLoS One 10, e0134508 (2015)](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0134508)
->>>>>>> to_merge
 
 ## Requirements and Installation
 

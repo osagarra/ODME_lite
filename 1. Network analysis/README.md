@@ -13,15 +13,7 @@ If you use our software, please do cite us.
 [1] Supersampling and network reconstruction of urban mobility.
 	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
 	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
-
->>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b
-=======
     [PLoS One 10, e0134508 (2015)](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0134508)
->>>>>>> to_merge
 
 ## Requirements and Installation
 

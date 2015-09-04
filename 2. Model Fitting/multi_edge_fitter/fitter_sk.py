@@ -136,7 +136,6 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
     ## all ready, let's go! ##
     print "### Fixing s,k ###"
     print "Initial errors | S_in grad:%f S_out grad:%f K_in:%f K_out:%f " % (delta_s[1],delta_s[0],delta_k[1],delta_k[0])
-<<<<<<< HEAD
     if np.max(np.abs(delta_s)) < tol_c and np.max(np.abs(delta_k))<tol_c:
         return a/alf,b/alf,c,d
     if print_c:
@@ -175,90 +174,6 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
             da,db = dist_check_s(a/alf,b/alf,c,d,sout,sin,selfs,agg,M)
             dc,dd = dist_check_k(a/alf,b/alf,c,d,kout,kin,selfs,agg,M)
             if np.abs(da) < tol_c and np.abs(dc) < tol_c:
-=======
-    if np.max(np.abs(delta_k)) < tol_c or np.max(np.abs(delta_k))<tol_c:
-        return a,b,c,d
-    if not selfs:
-        while True:
-            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
-            aux2 = np.einsum('i,j',c,d)
-            #strengths
-            b = sin*(alf*alf)/(d*np.einsum('i,ij',a*c,1./(aux2*(1.-aux)+aux)) -  d*a*c/(c*d*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf)))
-            b[inds_in]=0            
-            aux = np.exp(-np.einsum('i,j',a/alf,b/alf))
-            a = sout*(alf*alf)/(c*np.einsum('j,ij',b*d,1./(aux2*(1.-aux)+aux)) - c*b*d/(c*d*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf)))
-            a[inds_out]=0
-            aux = np.exp(-np.einsum('i,j',a/alf,b/alf))
-            #degrees
-            d = kin/(  np.einsum('i,ij',c,(1.-aux)/(aux2*(1.-aux)+aux)) - np.einsum('i,i->i',c,(1.-np.exp(-a/alf*b/alf))/(c*d*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf))))
-            d[inds_in]=0
-            aux2 = np.einsum('i,j',c,d)
-            c = kout/( np.einsum('j,ij',d,(1.-aux)/(aux2*(1.-aux)+aux)) - np.einsum('j,j->j',d,(1.-np.exp(-a/alf*b/alf))/(c*d*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf))))
-            c[inds_out]=0
-            #if reps>10:
-            tola = np.max(np.abs(afake-a))
-            tolb = np.max(np.abs(bfake-b))
-            tolc = np.max(np.abs(cfake-c))
-            told = np.max(np.abs(dfake-d))
-            if print_tol: 
-				print "Delta_x:%r Delta_y:%r Delta_z:%r Delta_w:%r" % (tola,tolb,tolc,told)
-            if print_c and reps%act==0:
-				da,db = dist_check_s(a/alf,b/alf,c,d,sout,sin,selfs)
-				dc,dd = dist_check_k(a/alf,b/alf,c,d,kout,kin,selfs)
-				if np.abs(da) < tol_c and np.abs(dc) < tol_c:
-					if verbose:
-						print "took %d reps, tola :%f, tolb:%f, tolc :%f, told:%f" % (reps,tola,tolb,tolc,told)
-					break
-				print "## Ds:%r Dk:%r" % (da,dd)
-            if  tolb< tol and tola<tol and tolc<tol and told<tol:
-                if verbose:
-                    print "took %d reps, tola :%f, tolb:%f, tolc :%f, told:%f" % (reps,tola,tolb,tolc,told)
-                break                
-            if reps>maxreps:
-                print "Algorithm did not converge after %d reps" % maxreps
-                break
-            if not all(np.isfinite(a)) or not all(np.isfinite(b)) or not all(np.isfinite(c)) or not all(np.isfinite(d)):
-                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
-            afake = a
-            bfake = b
-            cfake = c
-            dfake = d
-            reps +=1
-		#raise NotImplementedError("Feature not implemented")
-    else:
-        while True:
-            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
-            aux2 = np.einsum('i,j',c,d)
-            #strengths
-            b = sin* (alf*alf)/(d*np.einsum('i,ij',a*c,1./(aux2*(1.-aux)+aux)))
-            b[inds_in]=0            
-            aux = np.exp(-np.einsum('i,j',a/alf,b/alf))
-            a = sout*(alf*alf)/(c*np.einsum('j,ij',b*d,1./(aux2*(1.-aux)+aux)))
-            a[inds_out]=0
-            aux = np.exp(-np.einsum('i,j',a/alf,b/alf))
-            #degrees
-            d = kin/(  np.einsum('i,ij',c,(1.-aux)/(aux2*(1.-aux)+aux)))
-            d[inds_in]=0
-            aux2 = np.einsum('i,j',c,d)
-            c = kout/( np.einsum('j,ij',d,(1.-aux)/(aux2*(1.-aux)+aux)))            
-            c[inds_out]=0
-            #if reps>10:
-            tola = np.max(np.abs(afake-a))
-            tolb = np.max(np.abs(bfake-b))
-            tolc = np.max(np.abs(cfake-c))
-            told = np.max(np.abs(dfake-d))
-            if print_tol: 
-				print "Delta_x:%r Delta_y:%r Delta_z:%r Delta_w:%r" % (tola,tolb,tolc,told)
-            if print_c and reps%act==0:
-				da,db = dist_check_s(a/alf,b/alf,c,d,sout,sin)
-				dc,dd = dist_check_k(a/alf,b/alf,c,d,kout,kin)
-				if np.abs(da) < tol_c and np.abs(dc) < tol_c:
-					if verbose:
-						print "took %d reps, tola :%f, tolb:%f, tolc :%f, told:%f" % (reps,tola,tolb,tolc,told)
-					break
-				print "## Ds:%r Dk:%r" % (da,dd)
-            if  tolb< tol and tola<tol and tolc<tol and told<tol:
->>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b
                 if verbose:
                     print "took %d reps, tola :%f, tolb:%f, tolc :%f, told:%f" % (reps,tola,tolb,tolc,told)
                 break
@@ -375,7 +290,6 @@ def dist_check_s(x,y,z,w,sout,sin,selfs=True,agg=False,M=1):
         Agg: If the weighted network comes from aggreagation of binary networks set to True
         M: Number of layers (only in the case of aggregated network)
     """
-<<<<<<< HEAD
     if not agg:
         #xy_exp = np.exp(-np.einsum('i,j',x,y))
         xy_exp = np.exp(np.einsum('i,j',x,y))
@@ -403,19 +317,6 @@ def dist_check_s(x,y,z,w,sout,sin,selfs=True,agg=False,M=1):
         delta_x = np.abs(sout - M*x*z*np.einsum('j,ij',y*w,xy/(1+np.einsum('i,j',x,y))/(1 + zw *(xy-1))) + extra1).sum()
         delta_y = np.abs(sin - M*y*w*np.einsum('i,ij',x*z,xy /(1+np.einsum('i,j',x,y))/(1 + zw *(xy-1))) + extra1).sum()
     return delta_y,delta_x 
-=======
-    xy_exp = np.exp(-np.einsum('i,j',x,y))
-    zw = np.einsum('i,j',z,w)
-    if not selfs:
-        extra1 = np.einsum('i,i,ii->i',x*z,y*w,1./(zw*(1.-xy_exp)+xy_exp)) # diagonal
-    else:
-        extra1=0
-    #delta_x = sout - x*z*np.einsum('j,ij',y*w,xy_exp/(zw*(xy_exp-1.)+1.)) + extra1
-    #delta_y = sin - w*y*np.einsum('i,ij',x*z,xy_exp/(zw*(xy_exp-1.)+1.)) +  extra1
-    #return delta_x.sum(),delta_y.sum()
-    delta_x = np.abs(sout - x*z*np.einsum('j,ij',y*w,1./(zw*(1.-xy_exp)+xy_exp)) + extra1).sum()
-    return delta_x,delta_x
->>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b
 
 def dist_check_k(x,y,z,w,kout,kin,selfs=True,agg=False,M=1):
     """
@@ -426,7 +327,6 @@ def dist_check_k(x,y,z,w,kout,kin,selfs=True,agg=False,M=1):
         Agg: If the weighted network comes from aggreagation of binary networks set to True
         M: Number of layers (only in the case of aggregated network)
     """
-<<<<<<< HEAD
     if not agg:
         #xy_exp = np.exp(-np.einsum('i,j',x,y))
         xy_exp = np.exp(np.einsum('i,j',x,y))
@@ -648,16 +548,3 @@ def dist_check_k(x,y,z,w,kout,kin,selfs=True,agg=False,M=1):
     #return a,b,c,d
      
 ###############################     
-=======
-    xy_exp = np.exp(-np.einsum('i,j',x,y))
-    zw = np.einsum('i,j',z,w)
-    if not selfs:
-        extra1 = np.einsum('i,i->i',z*w,(1.-np.exp(-x*y))/(z*w*(1.-np.exp(-x*y))+np.exp(-x*y))) # diagonal
-    else:
-        extra1=0
-    #delta_z = (kout - z*np.einsum('j,ij',w,(xy_exp-1.)/(zw*(xy_exp-1.)+1.)) + extra1)
-    #delta_w = kin - w*np.einsum('i,ij',z,(xy_exp-1.)/(zw*(xy_exp-1.)+1.)) +  extra1
-    #return delta_z.sum(),delta_w.sum()
-    delta_z = np.abs(kout - z*np.einsum('j,ij',w,(1.-xy_exp)/(zw*(1.-xy_exp)+xy_exp)) + extra1).sum() # equal for both
-    return delta_z,delta_z
->>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b

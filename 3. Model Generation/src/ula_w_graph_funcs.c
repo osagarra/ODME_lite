@@ -1805,7 +1805,6 @@ double w_graph_loglikelyhood_ZIP2_xy(W_GRAPH* WG, double** x,int N_nodes,  int o
 }
 
 
-<<<<<<< HEAD
 double w_graph_loglikelyhood_ZIB2_xy(W_GRAPH* WG, double** x, int N_nodes, int layers, int opt_self, int opt_dir){
 	double S,p;
 	int i,j,t,dest;
@@ -1847,59 +1846,6 @@ double w_graph_loglikelyhood_ZIB2_xy(W_GRAPH* WG, double** x, int N_nodes, int l
 	}
 	if(opt_dir<0) S =S/2.;
 	return -S;  
-=======
-void w_graph_print_entropy(double* seq,int len,char* output){
-	int bins;
-	double mins,maxs,eps;
-	bins = (int)len/20.;
-	if(bins<5)
-	{
-		bins=5;
-	}else if(bins>50){
-		bins=50;
-	}
-	mins = min_value_double(seq,len);
-	maxs = max_value_double(seq,len);
-	eps = (maxs-mins)/1000.;
-    mins = mins - mins*eps;
-    maxs = maxs+maxs*eps;
-    if(mins<0) mins = 0;
-    if(maxs<0) maxs = 0;
-    if(mins>=maxs) maxs = mins+1;
-    gsl_histogram* h1=histogram_double(seq,mins,maxs,bins,len);
-	print_acc(output,h1,h1);
-	return;
-}
-
-double w_graph_loglikelyhood_poisson(W_GRAPH* WG,int N_nodes,double** wij){
-	double L,p,mu;
-	int i,j,t;
-	L = 0;
-	for(i=0;i<N_nodes;i++) // all edges
-	{
-		for(j=0;j<N_nodes;j++)
-		{
-            if((opt_self>0)||(i!=j))
-            {
-                t=find_value_int(WG->node[i].out, j, WG->node[i].kout);
-                if(t>=0)
-                {
-					t = WG->node[i].w_out[t];
-				}else{
-					t = 0
-				}
-                mu = wij[i][j];
-				if(mu>0)
-				{
-					p = gsl_ran_poisson_pdf (t, mu);
-					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
-					L+= log(p);
-				}
-			}
-		}
-	}
-	return L;    
->>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b
 }
 
 

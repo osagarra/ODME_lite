@@ -24,7 +24,6 @@ In case you are interested in randomizing binary networks in a variety of situat
 ## References 
 [1] Statistical mechanics of multiedge networks
 	Sagarra O., Pérez-Vicente C. and Díaz-Guilera, A.  Phys. Rev. E 88, 062806 (2013)
-<<<<<<< HEAD
 	[Physical Review E](http://pre.aps.org/abstract/PRE/v88/i6/e062806)
 		
 [2] Supersampling and network reconstruction of urban mobility.
@@ -32,20 +31,9 @@ In case you are interested in randomizing binary networks in a variety of situat
 	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
     [PLoS One 10, e0134508 (2015)](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0134508)
 	
-<<<<<<< HEAD
-=======
-    [Physical Review E](http://pre.aps.org/abstract/PRE/v88/i6/e062806)
-    
-[2] Supersampling and network reconstruction of urban mobility.
-	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
-	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
-
->>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b
-=======
 [3] Mind the edge! The role of adjacency matrix degeneration in maximum entropy weighted network models
     Sagarra, O., Pérez-Vicente C. and Díaz-Guilera, A.
     [](to be posted soon)
->>>>>>> to_merge
 External references:
 
 [4] A universal model of commuting networks

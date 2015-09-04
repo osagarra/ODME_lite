@@ -100,7 +100,6 @@ def balance_xy(lam,sin,sout,tol=1e-9,tol_c=1e-9,maxreps=10000,verbose=False,self
     afake = a
     bfake = b
     reps = 0
-<<<<<<< HEAD
     if 'x_ini' in kwargs.keys() or 'y_ini' in kwargs.keys():
         a = a*alf
         b = b*alf
@@ -140,50 +139,6 @@ def balance_xy(lam,sin,sout,tol=1e-9,tol_c=1e-9,maxreps=10000,verbose=False,self
         if print_c and reps%act==0:
             da,db = dist_check_s(a/alf,b/alf,lam,sout,sin,selfs=selfs,agg=agg,M=M)
             if np.abs(da) < tol_c:
-=======
-    if not selfs:
-        while True:
-            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
-            b = sin*(alf*alf) /(np.einsum('i,ij',lam*a,1./(lam*(1.-aux)+aux))-lam*a/(lam*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf)))
-            #np.einsum('i,ii->i',lam*a,aux/(lam*(aux-1)+1)))
-            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
-            a = sout*(alf*alf)/(np.einsum('j,ij',lam*b,1./(lam*(1.-aux)+aux))-lam*b/(lam*(1.-np.exp(-a/alf*b/alf))+np.exp(-a/alf*b/alf)))
-            #np.einsum('j,jj->j',lam*b,aux/(lam*(aux-1)+1)))
-            a[inds_out]=0
-            b[inds_in]=0
-            #if reps>10:
-            tolb = np.max(np.abs(bfake-b))
-            tola = np.max(np.abs(afake-a))
-            if print_tol: print "Delta_x:%r Delta_y:%r" % (tola,tolb)
-            if  tolb< tol and tola<tol:
-                break
-                if verbose:
-                    print "took %d reps, tolb:%f, tola :%f" % (reps,tolb,tola)
-            if reps>maxreps:
-                print "Algorithm did not converge after %d reps" % maxreps
-                break
-            if not all(np.isfinite(a)) or not all(np.isfinite(b)):
-                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
-            afake = a
-            bfake = b
-            reps +=1
-    else:
-        while True:
-            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
-            b = sin*(alf*alf) /(np.einsum('i,ij',lam*a,1./(lam*(1.-aux)+aux)))
-            #np.einsum('i,ii->i',lam*a,aux/(lam*(aux-1)+1)))
-            aux = np.exp(np.einsum('i,j',-a/alf,b/alf))
-            a = sout*(alf*alf)/(np.einsum('j,ij',lam*b,1./(lam*(1.-aux)+aux)))
-            #np.einsum('j,jj->j',lam*b,aux/(lam*(aux-1)+1)))
-            a[inds_out]=0
-            b[inds_in]=0
-            #if reps>10:
-            tolb = np.max(np.abs(bfake-b))
-            tola = np.max(np.abs(afake-a))
-            if print_tol: print "Delta_x:%r Delta_y:%r" % (tola,tolb)
-            if  tolb< tol and tola<tol:
-                break
->>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b
                 if verbose:
                     print "took %d reps, tola :%f, tolb:%f" % (reps,tola,tolb)
                 break
@@ -307,7 +262,6 @@ def dist_check_s(x,y,lam,sout,sin,selfs=True,agg=False,M=1,absolute=True):
         M: Number of layers (only in the case of aggregated network)
 
     """
-<<<<<<< HEAD
     if not agg:
         xy_exp = np.exp(-np.einsum('i,j',x,y))
         if not selfs:
@@ -327,15 +281,6 @@ def dist_check_s(x,y,lam,sout,sin,selfs=True,agg=False,M=1,absolute=True):
     if absolute:
         delta_x = np.abs(delta_x)
         delta_y = np.abs(delta_y)
-=======
-    xy_exp = np.exp(-np.einsum('i,j',x,y))
-    if not selfs:
-        extra1 = lam*x*y/(lam*(1.-np.exp(-x*y))+np.exp(-x*y)) # diagonal
-    else:
-        extra1=0
-    delta_x = np.abs(sout - x*lam*np.einsum('j,ij',y,1./(lam*(1.-xy_exp)+xy_exp)) + extra1)
-    delta_y = np.abs(sin  - y*lam*np.einsum('i,ij',x,1./(lam*(1.-xy_exp)+xy_exp)) + extra1)
->>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b
     return delta_x.sum(),delta_y.sum()
 
 def dist_check_E(x,y,lam,E,selfs=True,agg=False,M=1):
@@ -349,7 +294,6 @@ def dist_check_E(x,y,lam,E,selfs=True,agg=False,M=1):
         Agg: If the weighted network comes from aggreagation of binary networks set to True
         M: Number of layers (only in the case of aggregated network)
     """
-<<<<<<< HEAD
     if not agg:
         xy_exp = np.exp(-np.einsum('i,j',x,y))
         if not selfs:
@@ -364,14 +308,6 @@ def dist_check_E(x,y,lam,E,selfs=True,agg=False,M=1):
         else:
             extra1=0
         delta_E = E- lam*np.einsum('ij->',(1.-xy)/(lam*(1.-xy)+xy)) + extra1
-=======
-    xy_exp = np.exp(-np.einsum('i,j',x,y))
-    if not selfs:
-        extra1 = lam*np.einsum('ii->',(1.-xy_exp)/(lam*(1.-xy_exp)+xy_exp))
-    else:
-        extra1=0
-    delta_E = E- lam*np.einsum('ij->',(1.-xy_exp)/(lam*(1.-xy_exp)+xy_exp)) + extra1
->>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b
     return delta_E
 
 
