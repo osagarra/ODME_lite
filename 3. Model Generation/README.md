@@ -30,7 +30,9 @@ In case you are interested in randomizing binary networks in a variety of situat
 [2] Supersampling and network reconstruction of urban mobility.
 	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
 	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
+    [PLoS One 10, e0134508 (2015)](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0134508)
 	
+<<<<<<< HEAD
 =======
     [Physical Review E](http://pre.aps.org/abstract/PRE/v88/i6/e062806)
     
@@ -39,15 +41,20 @@ In case you are interested in randomizing binary networks in a variety of situat
 	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
 
 >>>>>>> e4d232dadd44cc2975bd6a834f9b613f25a7c94b
+=======
+[3] Mind the edge! The role of adjacency matrix degeneration in maximum entropy weighted network models
+    Sagarra, O., Pérez-Vicente C. and Díaz-Guilera, A.
+    [](to be posted soon)
+>>>>>>> to_merge
 External references:
 
-[3] A universal model of commuting networks
+[4] A universal model of commuting networks
 	Lenormand, M., Huet, S., Gargiulo, F., & Deffuant, G. (2012).  PloS One, 7(10), e45985.
 
-[4] A universal model for mobility and migration patterns
+[5] A universal model for mobility and migration patterns
 	Simini, F., González, M. C., Maritan, A., & Barabási, A.-L. (2012).  Nature, 484(7392), 96–100
 
-[5] The configuration multi-edge model: Assessing the effect of fixing node strengths on weighted network magnitudes
+[6] The configuration multi-edge model: Assessing the effect of fixing node strengths on weighted network magnitudes
 	Sagarra O., Font-Clos F., Pérez-Vicente C. J. and Díaz-Guilera, A. EPL (Europhysics Lett. 107, 38002 (2014).
 
 ## Requirements and Installation
@@ -222,7 +229,7 @@ This program generates ensemble expectations of various properties for networks 
 This part of the documentation describes the particularities that each case has (the numeration corresponds to the option -C in the code). 
 
 #### Case 0: Other models
-This case refers to the implementation of both the Radiation model (ref [3]) and the Sequential gravity model (ref [4]). In this case, 2 versions are implemented for each of the models (which are asymptotically equivalent), which may be specified with the flag *-e*. The only compulsory inputs for these models are the incoming and ougtoing strength sequences as well as the cost matrix considered. For the sequential gravity model, if the parametter *gamma* (*\beta* in the original paper) is not given, then it is approximated from the data (assuming the cost_matrix is provided in kilometers).
+This case refers to the implementation of both the Radiation model (ref [4]) and the Sequential gravity model (ref [5]). In this case, 2 versions are implemented for each of the models (which are asymptotically equivalent), which may be specified with the flag *-e*. The only compulsory inputs for these models are the incoming and ougtoing strength sequences as well as the cost matrix considered. For the sequential gravity model, if the parametter *gamma* (*\beta* in the original paper) is not given, then it is approximated from the data (assuming the cost_matrix is provided in kilometers).
 
 *Radiation Model*
 
@@ -235,7 +242,7 @@ The expectation in this case for the average number of trips between two nodes i
 
     <t_{ij}> = s^{out}_i  s^{in}_i/(1 - s^{in}_i/T) s^{in}_j / [ (s_ij + s^{in}_i)(s_ij + s^{in}_i + s^{in}_j)  
 
-Note that this implementation is based on the network formula adapted of the model (see equation 5 in [Masucci et atr. Arxiv](http://arxiv.org/abs/1206.5735)), which differs from the one in reference [3]. You may adapt the code changing the code (see apropriate lines in file *other_null_models.c**).
+Note that this implementation is based on the network formula adapted of the model (see equation 5 in [Masucci et atr. Arxiv](http://arxiv.org/abs/1206.5735)), which differs from the one in reference [4]. You may adapt the code changing the code (see apropriate lines in file *other_null_models.c**).
 
 *Seq. Gravity Model*
 
@@ -266,7 +273,7 @@ This case implements the situation where the strength as well as the total cost 
         AW  : <t_{ij}> = Mx_i y_j /(1+x_i y_j)
         AB  : <t_{ij}> = Mx_i y_j /(1-x_i y_j)
 
-Note that the case *gamma=0* is the weigthed configuration model (ref [5]). Also note that depending on the definition of costs, one recovers the doubly constrained gravity model in its exponential form or power-law deference form for distances. The events can be distributed according either to a set of independent Poisson processes with mean <t_{ij}> (grand canonical ensemble, -e flag set to 2) or a multinomial approach with fixed probabilities (canonical ensemble) with a fixed total sampling T (flag -e set to 0) or varying sampling according to a Poisson process of mean <T> (alternative grand-canonical case, flag -e set to 1).
+Note that the case *gamma=0* is the weigthed configuration model (ref [6]). Also note that depending on the definition of costs, one recovers the doubly constrained gravity model in its exponential form or power-law deference form for distances. The events can be distributed according either to a set of independent Poisson processes with mean <t_{ij}> (grand canonical ensemble, -e flag set to 2) or a multinomial approach with fixed probabilities (canonical ensemble) with a fixed total sampling T (flag -e set to 0) or varying sampling according to a Poisson process of mean <T> (alternative grand-canonical case, flag -e set to 1).
 
 #### Case 3: Fixed strength sequence and total number of binary edges (only case ME accepted)
 This case fixes the strength sequence of each node and also the total number of binary edges. The inputs are the *gamma* parameter, and a lagrange multiplier sequence for each node. The expectation for the average events between nodes is,
