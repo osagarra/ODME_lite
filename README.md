@@ -42,6 +42,11 @@ the weights are integer numbers.
 [3] Supersampling and network reconstruction of urban mobility.
 	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
 	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
+    [PLoS One 10, e0134508 (2015)](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0134508)
+
+[4] Mind the edge! The role of adjacency matrix degeneration in maximum entropy weighted network models
+    Sagarra, O., Pérez-Vicente C. and Díaz-Guilera, A.
+    [](to be posted soon)
 
 
 

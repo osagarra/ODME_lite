@@ -13,6 +13,7 @@ If you use our software, please do cite us.
 [1] Supersampling and network reconstruction of urban mobility.
 	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
 	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
+    [PLoS One 10, e0134508 (2015)](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0134508)
 
 ## Requirements and Installation
 
@@ -45,20 +46,26 @@ ______________
 
 #### Options
 ```
-	Compulsory:
-		-N      	Number of nodes [int]
-		-d			Directed (1) or undirected (0) option [int]
-		-f			Path to file with adj format: node_i node_j t_ij [all integer numbers]
- 	Optional
-		-z			Distance Option: Include distances in analysis? [int] (default=0 no, 1 for yes)
-		-s 			Initial seed for random generator [int] (default=1)
- 		-x 			Exponent for log-binning on network stats (-1 for no log binning) [int] (default=-1)
- 		-v 			Verbose (1 for on, 0 for off) [int] (default 0)
- 		-c 			Clustering option (1 for yes) (warning: Depending on av_s makes simulations orders of magnitude slower) [int] (default=0)
- 		-l 			Self-loop option (>0 for accepting them) (default =1)
-        -h 			Number of header lines on file_s [int] (default=1)
-        -m			Maximum distance for binning [float] (default= 20000) [in meters]"
-		-L			Log-distance option (to compute the logarithm of the cost matrix) [int] (default=0 np, >0 for yes)        
+ *  Compulosry items:
+ *		-N N_nodes. Number of nodes (int)
+ *		-d dir_opt. Undirected (0) or Directed (1)
+ *		-f file_adj Path to file with adj format node_i node_j t_ij
+ *  Optional items: 
+ *		-z Distance_option: Include distances in analysis? [default=0, 1 for yes]
+ *		-a file_dist Path to distance list in format node_i node_j d_ij [default, no distance]
+ *		-s seed.initial seed for random generator (int) (default=1)
+ *		-x Exponent for log-binning (-1 for no log binning) (Default=-1)
+ *		-v Verbose (1 for on, 0 for off) (Default 0)
+ *		-c Clustering option (1 for yes) (warning: Depending on av_s makes simulations orders of magnitude slower) (Default=0)
+ *		-l Self-loop option (>0 for accepting them) (Default =1) 
+ *		-h Number of header lines in input files (default=1)
+ *		-m Maximum distance for binning (default= 20000) [in meters]
+ *		-L Log-dist option (to compute the logarithm of the cost matrix) [default=0]
+ *     -F Implement Graph-filtering (applies Filter to graph according to null model with fixed strengths) [default=0]
+ *         -C case Null model type (ME=0, B=1, W=2) [default=0]
+ *         -M layers Number of layers [default=1] 
+ *         -Z alpha Confidence level [default=0.95] 
+ *         -X Path to file containing lagrange multiplier values xy
 ```
 
 ## Brief description of the Multi-Edge Network Analyzer
@@ -101,8 +108,9 @@ Node_num k k_analitic s Y2 k_nn k^w_nn s^w_nn
 First for the out case, then for the in case. 
 
 Explicit formulas (in latex):
-Out:
+
 ```
+Out:
 	k_i^{out} = \sum_j \Theta(t_ij)
 	k^{anal}_i^{out} = \sum_j (1-e^{-s_i^out}s_j^{in}/T})
 	s_i^{out} = \sum_j t_{ij}, 
