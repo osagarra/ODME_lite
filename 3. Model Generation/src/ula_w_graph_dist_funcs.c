@@ -268,7 +268,8 @@ gsl_histogram * w_graph_dist_compute_pij(W_GRAPH* WG, double ** d, int bins, int
 /*************************************************************************/
 /********************** Net stats ****************************************/
 /*************************************************************************/
-void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double av_k, int opt_dir, int self_opt, double** dist,gsl_rng * randgsl, double dmax){
+void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, int opt_dir, int self_opt, double** dist,gsl_rng * randgsl, double dmax, int verbose){
+    if(verbose>0) printf("... Computing graph edge stats...\n");
     //w(sin sout), w(kin,kout), w
     int **k=w_graph_compute_k(WG, N_nodes);
     int **s=w_graph_compute_s(WG, N_nodes);
@@ -304,14 +305,15 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     /// w histogram /////
     sout=vec_int_to_double(w,E);
     q=max_value_int(w,E);
+    if(verbose>0) printf("\t Max weight: %d | av existing weight: %.3f+-%.3f \n",q,mean_vec_int(w, E),sqrt(var_vec_int(w, E)));
     h1=histogram_double(sout,0,q,q,E);
     free(sout);
     //sprintf(cadena,"run_%dN%d_w.hist",run,N_nodes);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_w.hist",N_nodes,av_k);		
+	    sprintf(cadena,"N%d_w.hist",N_nodes);		
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_w.hist",N_nodes,av_k);		
+	    sprintf(cadena,"N%d_undir_w.hist",N_nodes);		
 	}
     print_acc(cadena, h1, h1);
     gsl_histogram_free(h1);
@@ -324,9 +326,9 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     //sprintf(cadena,"run_%dN%d_w.hist",run,N_nodes);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_d_edges.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_d_edges.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_d_edges.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_d_edges.hist",N_nodes);
 	}
     print_acc(cadena, h1, h1);
     gsl_histogram_free(h1);
@@ -338,9 +340,9 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     //sprintf(cadena,"run_%dN%d_w.hist",run,N_nodes);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_d_trips.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_d_trips.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_d_trips.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_d_trips.hist",N_nodes);
 	}
     print_acc(cadena, h1, h1);
     gsl_histogram_free(h1);
@@ -350,9 +352,9 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
 	h1 = w_graph_dist_compute_pij(WG, dist, 100, N_nodes, dmax, self_opt, opt_dir);
 	if(opt_dir>0)
 	{
-		sprintf(cadena,"N%davs%8.5f_pij.hist",N_nodes,av_k);
+		sprintf(cadena,"N%d_pij.hist",N_nodes);
 	}else{
-		sprintf(cadena,"N%davs%8.5f_undir_pij.hist",N_nodes,av_k);
+		sprintf(cadena,"N%d_undir_pij.hist",N_nodes);
 	}
 	print_acc(cadena, h1, h1);
 	gsl_histogram_free(h1);
@@ -364,9 +366,9 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     yy=y_of_x(wss, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_wp_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_wp_s_oi.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_w_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_w_s_oi.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins-1);
     free(sout);
@@ -380,9 +382,9 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     yy=y_of_x(wkk, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_wp_k_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_wp_k_oi.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_w_k_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_w_k_oi.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins-1);
     free(sout);
@@ -396,9 +398,9 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     yy=y_of_x(wss_zeros, sout, xranges,  L,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_w_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_w_s_oi.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_w_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_w_s_oi.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
     free(sout);
@@ -411,9 +413,9 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     yy=y_of_x(wss_zeros, sout, xranges,  L,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_p_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_p_s_oi.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_p_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_p_s_oi.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
     free(sout);
@@ -429,9 +431,9 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     yy=y_of_x(s_in_d, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_w_s_i.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_w_s_i.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_w_s_i.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_w_s_i.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins-1);
     free(sout);
@@ -445,9 +447,9 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     yy=y_of_x(s_out_d, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_w_s_o.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_w_s_o.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_w_s_o.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_w_s_o.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins-1);
     free(sout);
@@ -459,7 +461,7 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     sout=vec_int_to_double(w,E);
     xranges=log_bins_double(0, max_value_double(s_ij_d,E) , 1.05, &xbins);
     yy=y_of_x(s_ij_d, sout, xranges,  E,  xbins);
-    sprintf(cadena,"N%davs%8.5f_w_s_ij.hist",N_nodes,av_k);
+    sprintf(cadena,"N%d_w_s_ij.hist",N_nodes);
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins-1);
     free(sout);
     free(s_ij_d);
@@ -473,9 +475,9 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, d
     yy=y_of_x(d_edges, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_w_dij.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_w_dij.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_w_dij.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_w_dij.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins-1);
     free(sout);
@@ -544,7 +546,7 @@ void w_graph_dist_all_stats_ensemble_update(gsl_histogram** acc, W_GRAPH* WG, in
 }
 
 
-void w_graph_dist_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, int N_nodes, double av_k, int opt_dir){
+void w_graph_dist_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, int N_nodes, int opt_dir){
 	char	cadena[100];
 	//Normalize and std
 	acc_normalize(acc,len, 1./(double)reps);
@@ -553,45 +555,45 @@ void w_graph_dist_all_stats_ensemble_print(gsl_histogram** acc, int len, int rep
 	/*
 	if(dir==1)
 	{
-		sprintf(cadena,"N%davs%8.5fexpo%.2f_ens_r%d_sIN.hist",N_nodes,av_k,expo-1,reps);
+		sprintf(cadena,"N%dexpo%.2f_ens_r%d_sIN.hist",N_nodes,expo-1,reps);
 		print_acc(cadena, acc[0], acc[1]);
-		sprintf(cadena,"N%davs%8.5fexpo%.2f_ens_r%d_sOUT.hist",N_nodes,av_k,expo-1,reps);
+		sprintf(cadena,"N%dexpo%.2f_ens_r%d_sOUT.hist",N_nodes,expo-1,reps);
 		print_acc(cadena, acc[2], acc[3]);
-		sprintf(cadena,"N%davs%8.5fexpo%.2f_ens_r%d_kIN.hist",N_nodes,av_k,expo-1,reps);
+		sprintf(cadena,"N%dexpo%.2f_ens_r%d_kIN.hist",N_nodes,expo-1,reps);
 		print_acc(cadena, acc[4], acc[5]);
-		sprintf(cadena,"N%davs%8.5fexpo%.2f_ens_r%d_kOUT.hist",N_nodes,av_k,expo-1,reps);
+		sprintf(cadena,"N%dexpo%.2f_ens_r%d_kOUT.hist",N_nodes,expo-1,reps);
 		print_acc(cadena, acc[6], acc[7]);
-		sprintf(cadena,"N%davs%8.5fexpo%.2f_ens_r%d_w.hist",N_nodes,av_k,expo-1,reps);
+		sprintf(cadena,"N%dexpo%.2f_ens_r%d_w.hist",N_nodes,expo-1,reps);
 		print_acc(cadena, acc[8], acc[9]);
 	}else{
-		sprintf(cadena,"N%davs%8.5fexpo%.2f_ens_r%d_sOUT.hist",N_nodes,av_k,expo-1,reps);
+		sprintf(cadena,"N%dexpo%.2f_ens_r%d_sOUT.hist",N_nodes,expo-1,reps);
 		print_acc(cadena, acc[0], acc[1]);
-		sprintf(cadena,"N%davs%8.5fexpo%.2f_ens_r%d_kOUT.hist",N_nodes,av_k,expo-1,reps);
+		sprintf(cadena,"N%dexpo%.2f_ens_r%d_kOUT.hist",N_nodes,expo-1,reps);
 		print_acc(cadena, acc[2], acc[3]);
-		sprintf(cadena,"N%davs%8.5fexpo%.2f_ens_r%d_w.hist",N_nodes,av_k,expo-1,reps);
+		sprintf(cadena,"N%dexpo%.2f_ens_r%d_w.hist",N_nodes,expo-1,reps);
 		print_acc(cadena, acc[4], acc[5]);
 	}
 	*/
 	if(opt_dir>0)
 	{
-		sprintf(cadena,"N%davs%8.5f_ens_r%d_w.hist",N_nodes,av_k,reps);		
+		sprintf(cadena,"N%d_ens_r%d_w.hist",N_nodes,reps);		
 	}else{
-		sprintf(cadena,"N%davs%8.5f_undir_ens_r%d_w.hist",N_nodes,av_k,reps);		
+		sprintf(cadena,"N%d_undir_ens_r%d_w.hist",N_nodes,reps);		
 	}
 
 	print_acc(cadena, acc[0], acc[1]);
 	if(opt_dir>0)
 	{
-		sprintf(cadena,"N%davs%8.5f_ens_r%d_d_edges.hist",N_nodes,av_k,reps);
+		sprintf(cadena,"N%d_ens_r%d_d_edges.hist",N_nodes,reps);
 	}else{
-		sprintf(cadena,"N%davs%8.5f_undir_ens_r%d_d_edges.hist",N_nodes,av_k,reps);
+		sprintf(cadena,"N%d_undir_ens_r%d_d_edges.hist",N_nodes,reps);
 	}
 	print_acc(cadena, acc[4], acc[5]);
 	if(opt_dir>0)
 	{
-		sprintf(cadena,"N%davs%8.5f_ens_r%d_d_trips.hist",N_nodes,av_k,reps);
+		sprintf(cadena,"N%d_ens_r%d_d_trips.hist",N_nodes,reps);
 	}else{
-		sprintf(cadena,"N%davs%8.5f_undir_ens_r%d_d_trips.hist",N_nodes,av_k,reps);
+		sprintf(cadena,"N%d_undir_ens_r%d_d_trips.hist",N_nodes,reps);
 	}
 	print_acc(cadena, acc[2], acc[3]);
 

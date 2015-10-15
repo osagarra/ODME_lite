@@ -10,15 +10,15 @@
 #include "ula_gen_funcs.h"
 
 /******* Read funcs ********/
-double** read_distances(char *input_name,int num_nodes, int header, int log_opt);
-int**    read_node_list_int(char *input_name,int num_nodes, int header);
-int* read_node_list_int_undir(char *input_name,int num_nodes, int header);
-double** read_node_list_double(char *input_name,int num_nodes, int header);
-double* read_node_list_double_undir(char *input_name,int num_nodes, int header);
-int**    read_net_list(char *input_name, int num_nodes, int header);
-double** read_net_list_double(char *input_name, int num_nodes, int header);
-double** read_node_list_xatts_double(char *input_name,int num_nodes, int num_atts, int header);
-int** read_node_list_xatts_int(char *input_name,int num_nodes, int num_atts, int header);
+double** read_distances(char *input_name,int num_nodes, int header, int log_opt, int verbose);
+int**    read_node_list_int(char *input_name,int num_nodes, int header, int verbose);
+int* read_node_list_int_undir(char *input_name,int num_nodes, int header, int verbose);
+double** read_node_list_double(char *input_name,int num_nodes, int header, int verbose);
+double* read_node_list_double_undir(char *input_name,int num_nodes, int header, int verbose);
+int**    read_net_list(char *input_name, int num_nodes, int header, int verbose);
+double** read_net_list_double(char *input_name, int num_nodes, int header, int verbose);
+double** read_node_list_xatts_double(char *input_name,int num_nodes, int num_atts, int header, int verbose);
+int** read_node_list_xatts_int(char *input_name,int num_nodes, int num_atts, int header, int verbose);
 /******* Dist funcs ********/
 double* nearest_neighbor_dist(double ** dist, int num_nodes);
 int* nearest_neighbor(double ** dist, int num_nodes);

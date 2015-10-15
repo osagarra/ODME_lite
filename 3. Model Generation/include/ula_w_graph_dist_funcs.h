@@ -26,11 +26,11 @@ double *w_graph_dist_compute_s_out_edges(W_GRAPH* WG, int N_nodes);
 double *w_graph_dist_compute_s_in_edges(W_GRAPH* WG, int N_nodes);
 int w_graph_dist_compute_sij(int  **s, double ** dist, int origin, int dest, int N_nodes, gsl_rng * randgsl, int perturb);
 /******* Stats ******/
-void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double av_k, int opt_dir, int self_opt, double** dist, gsl_rng * randgsl, double dmax);
+void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, int opt_dir, int self_opt, double** dist, gsl_rng * randgsl, double dmax, int verbose);
 /******* Ensemble Stats ******/
 gsl_histogram ** w_graph_dist_all_stats_ensemble_allocate(int dir, double d_max, int w_max);
 void w_graph_dist_all_stats_ensemble_update(gsl_histogram** acc, W_GRAPH* WG, int N_nodes, int dir,double** dist);
-void w_graph_dist_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, int N_nodes, double av_k, int opt_dir);
+void w_graph_dist_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, int N_nodes, int opt_dir);
 /******* Net entropy ******/
 double w_graph_entropy_poisson_dist(W_GRAPH* WG, double** x,int N_nodes, double** dist, double gamma, int opt_self, int opt_dir);
 #endif

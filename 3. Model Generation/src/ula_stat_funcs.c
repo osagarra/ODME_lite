@@ -620,11 +620,11 @@ void print_hist_int(char *input_name, int len, int *av_hist){
 /*****************************************************/
 void print_hist2d_mean(char *input_name, double * h_mean, double * h_std, double * xrange, int len){
     FILE* input=open_file("w",input_name);
-    fprintf(input,"# X_min value, x_max value, <Y|x>, sigma_{y|x} #\n");
+    fprintf(input,"#Bin_id X_min value, x_max value, <Y|x>, sigma_{y|x} #\n");
     int i;
     for(i=0;i<len-1;i++)
     {
-	fprintf(input,"%lf %lf %lf %lf\n",xrange[i],xrange[i+1],h_mean[i],h_std[i]);
+	fprintf(input,"%d %lf %lf %lf %lf\n",i,xrange[i],xrange[i+1],h_mean[i],h_std[i]);
     }
     fclose(input);
     return;

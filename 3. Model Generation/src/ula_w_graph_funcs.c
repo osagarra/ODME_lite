@@ -14,11 +14,11 @@
 /****************************************************************************
  * I-O *
  ****************************************************************************/
-W_GRAPH* w_graph_read_edge_list(char *input_name, int N_nodes, int opt_dir, int header){
+W_GRAPH* w_graph_read_edge_list(char *input_name, int N_nodes, int opt_dir, int header, int verbose){
 	int i,j,tij;
 	int n,E;
 	n=E=0;
-	printf("reading edge list file and converting to Weighted adjacency matrix...\n");
+	if(verbose>0) printf("reading edge list file and converting to Weighted adjacency matrix...\n");
     // alloc graph
 	W_GRAPH* WG = w_graph_alloc(N_nodes);
 	FILE* input=open_file("r",input_name);
@@ -59,7 +59,7 @@ W_GRAPH* w_graph_read_edge_list(char *input_name, int N_nodes, int opt_dir, int 
 			E++;
 		}
   	}
-	printf(" -- Total num of trips %i \t Total number of edges:%d. Selfloops? %d\n",n,E,opt_self);
+	if(verbose>0) printf(" -- Total num of trips %i \t Total number of edges:%d. Selfloops? %d\n",n,E,opt_self);
 	fclose(input);
 	WG->opt_dir = opt_dir;
 	WG->opt_self = 0;
@@ -766,6 +766,7 @@ int * w_graph_compute_w(W_GRAPH* WG, int N_nodes, int* aux, int zeros){
 		assert(aux2==L2);
     }else{
 		E = w_graph_total_edges( WG, N_nodes);
+		//printf("E:%d\n",E);
 		w = cast_vec_int(E);
 		mem=E;
         for(i=0;i<N_nodes;i++)
@@ -792,7 +793,8 @@ int * w_graph_compute_w(W_GRAPH* WG, int N_nodes, int* aux, int zeros){
                 
             }
         }
-		w=safe_int_realloc(w, mem, aux2, 0);// fix final size
+        //assert(E==mem);
+        if(aux2<mem) w=safe_int_realloc(w, mem, aux2, 0);// fix final size
     }
     //printf("E: %d, aux2:%d delta:%d\n", E, aux2, E-aux2); fflush(stdout);
     *aux=aux2;
@@ -1906,10 +1908,12 @@ double w_graph_compute_sorensen_av(W_GRAPH* WGoriginal, double** pij, int N_node
 /****************************************************************************
  * aLL STATS *
  ****************************************************************************/
-void w_graph_node_stats_list(W_GRAPH* WG, int N_nodes, int run, double av_k, int opt_dir, int opt_clust, int self_opt){
+void w_graph_node_stats_list(W_GRAPH* WG, int N_nodes, int run, int opt_dir, int opt_clust, int self_opt, int verbose){
+    if (verbose>0) printf("... Computing node stats...\n");
     //p(k),p(s),p(w),w(sin sout), s_nn, k_nn, s(k)
     int **k=w_graph_compute_k(WG, N_nodes);
     int **s=w_graph_compute_s(WG, N_nodes);
+    if (verbose>0) printf("\t Av_k: %.3f +- %.3f | Av_s: %.3f +- %.3f\n", mean_vec_int(k[0], N_nodes), var_vec_int(k[0], N_nodes), mean_vec_int(s[0], N_nodes), var_vec_int(s[0], N_nodes));
     //int E;
     //long int T=sum_vec_int(s[0],N_nodes);
     //int *wkk2=w_graph_compute_w_ss(WG->node, N_nodes, 0);
@@ -1923,9 +1927,9 @@ void w_graph_node_stats_list(W_GRAPH* WG, int N_nodes, int run, double av_k, int
     // k(s) //
 	if(opt_dir>0)
 	{
-		sprintf(cadena,"N%davs%8.5fnode_list.list",N_nodes,av_k);
+		sprintf(cadena,"N%dnode_list.list",N_nodes);
 	}else{
-		sprintf(cadena,"N%davs%8.5f_undir_node_list.list",N_nodes,av_k);
+		sprintf(cadena,"N%d_undir_node_list.list",N_nodes);
 	}
     
     FILE* fil=open_file("w", cadena);
@@ -1977,8 +1981,9 @@ void w_graph_node_stats_list(W_GRAPH* WG, int N_nodes, int run, double av_k, int
 }
 
 
-void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double av_k, int opt_dir, int self_opt, int w_anal){
+void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, int opt_dir, int self_opt, int w_anal, int verbose){
     //w(sin sout), w(kin,kout), w
+    if(verbose>0) printf("... Computing graph edge stats...\n");
     int **k=w_graph_compute_k(WG, N_nodes);
     int **s=w_graph_compute_s(WG, N_nodes);
     int E,L;
@@ -2004,14 +2009,15 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double
     /// w histogram /////
     sout=vec_int_to_double(w,E);
     int q=max_value_int(w,E);
+    if(verbose>0) printf("\t Max weight: %d | av existing weight: %.3f+-%.3f \n",q,mean_vec_int(w, E),sqrt(var_vec_int(w, E)));
     h1=histogram_double(sout,0,q,q,E);
     free(sout);
     //sprintf(cadena,"run_%dN%d_w.hist",run,N_nodes);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_w.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_w.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_w.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%dundir_w.hist",N_nodes);
 	}
 
     print_acc(cadena, h1, h1);
@@ -2025,10 +2031,10 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double
         if(opt_dir>0)
         {
             pp = w_graph_compute_p_w_analitic_from_s_directed(10*q,1.5,s,N_nodes, self_opt, &lenn);
-			sprintf(cadena,"N%davs%8.5f_w_anal.hist",N_nodes,av_k);
+			sprintf(cadena,"N%d_w_anal.hist",N_nodes);
         }else{
             pp = w_graph_compute_p_w_analitic_from_s_undirected(10*q,1.5,s[0],N_nodes, self_opt, &lenn);
-			sprintf(cadena,"N%davs%8.5f_undir_w_anal.hist",N_nodes,av_k);
+			sprintf(cadena,"N%d_undir_w_anal.hist",N_nodes);
         }
         FILE* fil=open_file("w", cadena);
         fprintf(fil,"# t p(t) # \n");
@@ -2049,9 +2055,9 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double
     yy=y_of_x(wss, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_wp_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_wp_s_oi.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_wp_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_wp_s_oi.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
     free(sout);
@@ -2065,9 +2071,9 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double
     yy=y_of_x(wkk, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_wp_k_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_wp_k_oi.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_wp_k_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_wp_k_oi.hist",N_nodes);
 	}
 
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
@@ -2083,9 +2089,9 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double
     yy=y_of_x(wss_zeros, sout, xranges,  L,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_w_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_w_s_oi.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_w_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_w_s_oi.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
     free(sout);
@@ -2098,9 +2104,9 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, double
     yy=y_of_x(wss_zeros, sout, xranges,  L,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%davs%8.5f_p_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_p_s_oi.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%davs%8.5f_undir_p_s_oi.hist",N_nodes,av_k);
+	    sprintf(cadena,"N%d_undir_p_s_oi.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
     free(sout);
@@ -2240,7 +2246,7 @@ void w_graph_node_stats_ensemble(W_GRAPH* WG, int N_nodes, double** container, d
 }
 
 
-void w_graph_node_stats_ensemble_print(int reps, int N_nodes, double* Tcont, double** cont, double ** cont2, int** node_nonzero, double av_k, double bin_exp, int len_acc, int opt_dir){
+void w_graph_node_stats_ensemble_print(int reps, int N_nodes, double* Tcont, double** cont, double ** cont2, int** node_nonzero , double bin_exp, int len_acc, int opt_dir){
     char cadena[100];
     int i,j;
     //printf("i am printing\n");fflush(stdout);
@@ -2307,9 +2313,9 @@ void w_graph_node_stats_ensemble_print(int reps, int N_nodes, double* Tcont, dou
     }
     if(opt_dir==1)
     {
-		sprintf(cadena,"N%davs%.5f_ens_r%dnode_list.list",N_nodes,av_k,reps);
+		sprintf(cadena,"N%d_ens_r%dnode_list.list",N_nodes,reps);
 	}else{
-		sprintf(cadena,"N%davs%.5f_undir_ens_r%d_node_list.list",N_nodes,av_k,reps);		
+		sprintf(cadena,"N%d_undir_ens_r%d_node_list.list",N_nodes,reps);		
 	}
     FILE* fil=open_file("w", cadena);
     fprintf(fil,"# <T>=%f+-%f # \n",Tcont[0] ,sqrt(Tcont[1]-Tcont[0]*Tcont[0]));
@@ -2437,7 +2443,7 @@ void w_graph_all_stats_ensemble_update(gsl_histogram** acc, W_GRAPH* WG, int N_n
 	free(w);
 	return;
 }
-void w_graph_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, int N_nodes, double av_k, int opt_dir){
+void w_graph_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, int N_nodes, int opt_dir){
 	char	cadena[100];
 	//Normalize and std
 	acc_normalize(acc,len, 1./(double)reps);
@@ -2467,9 +2473,9 @@ void w_graph_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, in
 	*/
     if(opt_dir==1)
     {
-		sprintf(cadena,"N%davs%8.5f_ens_r%d_w.hist",N_nodes,av_k,reps);
+		sprintf(cadena,"N%d_ens_r%d_w.hist",N_nodes,reps);
 	}else{
-		sprintf(cadena,"N%davs%8.5f_undir_ens_r%d_w.hist",N_nodes,av_k,reps);
+		sprintf(cadena,"N%d_undir_ens_r%d_w.hist",N_nodes,reps);
 	}
 	print_acc(cadena, acc[0], acc[1]);
 	//Free all
@@ -2514,8 +2520,9 @@ double** w_graph_to_adj_matrix(W_GRAPH* WG, int N_nodes){
 /****************************************************************************
  * Graph Filtering *
  ****************************************************************************/
-W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, double gamma, int mode, int M){
+W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, double gamma, int mode, int M, int verbose){
     // filters graph if t in in confidence bounds according to C.I gamma //
+    if(verbose>0) printf("... Filtering graph with alpha=%.3f | mode:%d...\n",gamma,mode);
 	int i,j;
     int id_node;
     double mu;
@@ -2569,7 +2576,7 @@ W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, doub
             }
         }
     }
-    printf("\tTotal number of units after filtering: events: %d (f:%.5f) | edges:%d (f:%.5f) \n",tot,(double)tot/T,etot,(double)etot/E);
+    if(verbose>0) printf("\tTotal number of units after filtering: events: %d (f:%.5f) | edges:%d (f:%.5f) \n",tot,(double)tot/T,etot,(double)etot/E);
     return WGf;
 }
 

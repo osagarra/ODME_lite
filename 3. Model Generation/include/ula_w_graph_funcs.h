@@ -15,7 +15,7 @@
 
 
 /******* Read funcs ********/
-W_GRAPH* w_graph_read_edge_list(char *input_name, int num_nodes, int opt_dir, int header);
+W_GRAPH* w_graph_read_edge_list(char *input_name, int num_nodes, int opt_dir, int header, int verbose);
 /******* Allocation ********/
 W_GRAPH* w_graph_alloc(int N_nodes);
 void w_graph_free_nodes(W_GRAPH* WG, int N_nodes);
@@ -81,19 +81,19 @@ double w_graph_loglikelyhood_ZIP2_xy(W_GRAPH* WG, double** x, int N_nodes, int o
 double w_graph_loglikelyhood_ZIB2_xy(W_GRAPH* WG, double** x, int N_nodes, int layers, int opt_self, int opt_dir);
 
 /******* All_stats *****/
-void w_graph_node_stats_list(W_GRAPH* WG, int N_nodes, int run, double av_k, int opt_dir, int opt_clust, int self_opt);
+void w_graph_node_stats_list(W_GRAPH* WG, int N_nodes, int run, int opt_dir, int opt_clust, int self_opt, int verbose);
 int w_graph_total_weight( W_GRAPH* WG, int N_nodes);
 int w_graph_total_edges( W_GRAPH* WG, int N_nodes);
 int w_graph_total_edgepairs( W_GRAPH* WG, int N_nodes);
-void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp,double av_k, int opt_dir, int self_opt, int w_anal);
+void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp,int opt_dir, int self_opt, int w_anal, int verbose);
 
 /******* Ensemble stats *****/
 void w_graph_node_stats_ensemble(W_GRAPH* WG, int N_nodes, double** container, double** container2, int** WG_nonzero, double* T_container, int opt_dir, int opt_clust );
-void w_graph_node_stats_ensemble_print(int reps, int N_nodes, double* Tcont, double** cont, double ** cont2, int** WG_nonzero, double av_k, double bin_exp, int len_acc, int opt_dir);
+void w_graph_node_stats_ensemble_print(int reps, int N_nodes, double* Tcont, double** cont, double ** cont2, int** WG_nonzero, double bin_exp, int len_acc, int opt_dir);
 
 gsl_histogram ** w_graph_all_stats_ensemble_allocate(int dir, int s_min, int s_max, int k_min, int k_max, int w_max);
 void w_graph_all_stats_ensemble_update(gsl_histogram** acc, W_GRAPH* WG, int N_nodes, int dir);
-void w_graph_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, int N_nodes, double av_k, int opt_dir);
+void w_graph_all_stats_ensemble_print(gsl_histogram** acc, int len, int reps, int N_nodes, int opt_dir);
 /******* Other funcs *********/
 double w_graph_compute_rho(double E_av, double T, int opt_indist);
 /******* Transformations ********/
@@ -114,6 +114,6 @@ double w_graph_compute_sorensen_av(W_GRAPH* WGoriginal, double** pij, int N_node
 /****************************************************************************
  * Graph Filtering *
  ****************************************************************************/
-W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, double gamma, int mode, int M);
+W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, double gamma, int mode, int M, int verbose);
 int* find_tmintmax_xy(double xy, double gamma, int mode, int M);
 #endif

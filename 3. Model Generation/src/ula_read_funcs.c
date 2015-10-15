@@ -15,8 +15,8 @@
  *  ...Reading functions *
  ****************************************************************************/
 
-double** read_distances(char *input_name, int num_nodes, int header, int opt_log){
-	printf("...Reading distance file...\n");
+double** read_distances(char *input_name, int num_nodes, int header, int opt_log, int verbose){
+	if(verbose>0) printf("...Reading distance file...\n");
 	FILE* input=open_file("r",input_name);
 	int i,j,di,dj;
 	double dij;
@@ -70,7 +70,7 @@ double** read_distances(char *input_name, int num_nodes, int header, int opt_log
 		//abort();
 		}
 	*/
-	//printf("...Read %i distances...\n",n);
+	if(verbose>0)printf("...Read %i distances...\n",n);
 	fclose(input);
 	return d;
 }
@@ -78,8 +78,8 @@ double** read_distances(char *input_name, int num_nodes, int header, int opt_log
 
 
 
-int** read_net_list(char *input_name, int num_nodes, int header){
-	printf("...Reading net (NxN) list integer file...\n");
+int** read_net_list(char *input_name, int num_nodes, int header, int verbose){
+	if(verbose>0) printf("...Reading net (NxN) list integer file...\n");
 	FILE* input=open_file("r",input_name);
 	int** d=cast_mat_int(num_nodes,num_nodes);
 	int i,j,dij,k;
@@ -104,13 +104,13 @@ int** read_net_list(char *input_name, int num_nodes, int header){
 		}
 		k++;
   	}
-	printf("Total sum of attribute %i\n",n);
+	if(verbose>0)printf("Total sum of attribute %i\n",n);
 	fclose(input);
 	return d;
 }
 
-double** read_net_list_double(char *input_name, int num_nodes, int header){
-	printf("...Reading net (NxN) list file with float arguments ...\n");
+double** read_net_list_double(char *input_name, int num_nodes, int header, int verbose){
+	if(verbose>0) printf("...Reading net (NxN) list file with float arguments ...\n");
 	FILE* input=open_file("r",input_name);
 	double** d=cast_mat_double(num_nodes,num_nodes);
 	int i,j,k;
@@ -137,7 +137,7 @@ double** read_net_list_double(char *input_name, int num_nodes, int header){
 	  		//printf("%i",n);fflush(stdout);			
 		}
   	}
-	printf("Total sum of attribute %lf\n",n);
+  	if(verbose>0) printf("Total sum of attribute %lf\n",n);
 	fclose(input);
 	return d;
 }
@@ -184,8 +184,8 @@ double*** read_edge_list_double(char *input_name, int num_nodes, int header){ //
 
 /************************************/
 
-int** read_node_list_int(char *input_name,int num_nodes,int header){
-	printf("...Reading node directed attribute file...\n");
+int** read_node_list_int(char *input_name,int num_nodes,int header, int verbose){
+	if(verbose>0) printf("...Reading node directed attribute file...\n");
 	FILE* input=open_file("r",input_name);
 	int** s=(int**)malloc(sizeof(int*)*2);
 	s[0]=(int*)malloc(sizeof(int)*num_nodes);
@@ -224,13 +224,13 @@ int** read_node_list_int(char *input_name,int num_nodes,int header){
 		abort();
 	}else if(flag==1){printf("Node numbers are not congruent with given list!");
 	}
-	printf("Total number of nodes %i \t Total in_att %i \t Total out_att %i Difference %i\n",m,att_in,att_out,abs(att_in-att_out));
+	if(verbose>0) printf("Total number of nodes %i \t Total in_att %i \t Total out_att %i Difference %i\n",m,att_in,att_out,abs(att_in-att_out));
 	fclose(input);
 	return s;
 }
 
-int* read_node_list_int_undir(char *input_name,int num_nodes,int header){
-	printf("...Reading node integer undirected attribute file...\n");
+int* read_node_list_int_undir(char *input_name,int num_nodes,int header, int verbose){
+	if(verbose>0) printf("...Reading node integer undirected attribute file...\n");
 	FILE* input=open_file("r",input_name);
 	int* s=(int*)malloc(num_nodes*sizeof(int));
 	int n,out,k;
@@ -263,14 +263,14 @@ int* read_node_list_int_undir(char *input_name,int num_nodes,int header){
 		abort();
 	}else if(flag==1){printf("Node numbers are not congruent with given list!");
 	}
-	printf("Total number of nodes %i \t Total att %i \n",m,att_out);
+	if(verbose>0) printf("Total number of nodes %i \t Total att %i \n",m,att_out);
 	fclose(input);
 	return s;
 }
 
 
-double* read_node_list_double_undir(char *input_name,int num_nodes, int header){
-	printf("...Reading node undirected float attribute file...\n");
+double* read_node_list_double_undir(char *input_name,int num_nodes, int header, int verbose){
+	if(verbose>0) printf("...Reading node undirected float attribute file...\n");
 	FILE* input=open_file("r",input_name);
 	double* s=(double*)malloc(num_nodes*sizeof(double));
 	int n,k;
@@ -303,7 +303,7 @@ double* read_node_list_double_undir(char *input_name,int num_nodes, int header){
 		abort();
 	}else if(flag==1){printf("Node numbers are not congruent with given list!");
 	}
-	printf("Total number of nodes %i \t Total att %lf \n",m,att_out);
+	if(verbose>0) printf("Total number of nodes %i \t Total att %lf \n",m,att_out);
 	fclose(input);
 	return s;
 }
@@ -312,8 +312,8 @@ double* read_node_list_double_undir(char *input_name,int num_nodes, int header){
 
 /************************************/
 
-double** read_node_list_double(char *input_name,int num_nodes, int header){
-	printf("...Reading node float directed attribute file...\n");
+double** read_node_list_double(char *input_name,int num_nodes, int header, int verbose){
+	if(verbose>0) printf("...Reading node float directed attribute file...\n");
 	FILE* input=open_file("r",input_name);
 	double ** s=(double**)malloc(sizeof(double*)*2);
 	s[0]=(double*)malloc(sizeof(double)*num_nodes);
@@ -350,13 +350,13 @@ double** read_node_list_double(char *input_name,int num_nodes, int header){
 		abort();
 	}else if(flag==1){printf("Node numbers are not congruent with given list!");
 	}
-	printf("Total number of nodes %i \t Total in_att %lf \t Total out_att %lf Difference %lf\n",m,att_in,att_out,fabs(att_in-att_out));
+	if(verbose>0) printf("Total number of nodes %i \t Total in_att %lf \t Total out_att %lf Difference %lf\n",m,att_in,att_out,fabs(att_in-att_out));
 	fclose(input);
 	return s;
 }
 
-double** read_node_list_xatts_double(char *input_name,int num_nodes, int num_atts, int header){
-	printf("...Reading node float attribute file with %d atts...\n",num_atts);
+double** read_node_list_xatts_double(char *input_name,int num_nodes, int num_atts, int header, int verbose){
+	if(verbose>0) printf("...Reading node float attribute file with %d atts...\n",num_atts);
 	FILE* input=open_file("r",input_name);
 	double ** s= cast_mat_double(num_atts,num_nodes);
 	double aux;
@@ -392,12 +392,13 @@ double** read_node_list_xatts_double(char *input_name,int num_nodes, int num_att
 	if(flag==1){
 		printf("Node numbers are not congruent with given list!");
 	}
+	if(verbose>0) printf("Read %d rows of %d attributes per node\n",m,num_atts);
 	fclose(input);
 	return s;
 }
 
-int** read_node_list_xatts_int(char *input_name,int num_nodes, int num_atts, int header){
-	printf("...Reading node int attribute file with %d atts...\n",num_atts);
+int** read_node_list_xatts_int(char *input_name,int num_nodes, int num_atts, int header, int verbose){
+	if(verbose>0) printf("...Reading node int attribute file with %d atts...\n",num_atts);
 	FILE* input=open_file("r",input_name);
 	int ** s= cast_mat_int(num_nodes, num_atts);
 	//double * dum= cast_vec_double(num_atts-1);

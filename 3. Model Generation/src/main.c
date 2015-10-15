@@ -263,7 +263,7 @@ int main(int argc, char *argv[]){
     double LogL; // loglikelyhood
     LogL = -1;
     /****** Distance reading ******/
-    if(opt_dist>0) dist = read_distances(file_d,N_nodes,header,opt_log);
+    if(opt_dist>0) dist = read_distances(file_d,N_nodes,header,opt_log, opt_verbose);
 /*    int i,j;
     if(fabs(gamma)<1e-12)
     {
@@ -328,13 +328,13 @@ int main(int argc, char *argv[]){
             }
             if(opt_dir>0)
             {
-                xx2 = read_node_list_int(file_s, N_nodes, header); // strenght sequence (ints)
+                xx2 = read_node_list_int(file_s, N_nodes, header, opt_verbose); // strenght sequence (ints)
                 T= sum_vec_int(xx2[0],N_nodes); // T is \sum_i s_i (for all cases)
                 xmax = (double)max_value_int(xx2[0],N_nodes);
                 ymax = (double)max_value_int(xx2[1],N_nodes);
                 w_max=10.*xmax*ymax/T;
             }else{
-                xx = read_node_list_int_undir(file_s, N_nodes, header); // strenght sequence (ints)
+                xx = read_node_list_int_undir(file_s, N_nodes, header, opt_verbose); // strenght sequence (ints)
                 T= sum_vec_int(xx,N_nodes); // T is \sum_i s_i (for all cases)
                 xmax = (double)max_value_int(xx,N_nodes);
                 w_max= 10*xmax*xmax/T;
@@ -343,7 +343,7 @@ int main(int argc, char *argv[]){
         else if(cases==1) // fixed pij case
         {
             printf("\t1:: Selected Case with provided custom pij matrix\n");
-            pij = read_net_list_double(file_s, N_nodes, header);
+            pij = read_net_list_double(file_s, N_nodes, header, opt_verbose);
             norm = sum_matrix_double(pij, N_nodes, N_nodes);
             if((T<(double)N_nodes/100)||(T<10))
             {
@@ -375,7 +375,7 @@ int main(int argc, char *argv[]){
                 // read inputs //
                 if(opt_dir>0)
                 {
-                    x2 = read_node_list_xatts_double(file_s, N_nodes, 2, header);
+                    x2 = read_node_list_xatts_double(file_s, N_nodes, 2, header, opt_verbose);
                     if(opt_self>0)
                     {
 						xmax = max_value_double(x2[0],N_nodes);
@@ -399,7 +399,7 @@ int main(int argc, char *argv[]){
                         }
                     }
                 }else{
-                    x2 = read_node_list_xatts_double(file_s, N_nodes, 1, header);
+                    x2 = read_node_list_xatts_double(file_s, N_nodes, 1, header, opt_verbose);
 					xmax = max_value_double(x2[0],N_nodes);
                     if(opt_self>0)
                     {
@@ -426,12 +426,12 @@ int main(int argc, char *argv[]){
                 printf("\t3:: Selected Case with fixed strength sequence and total number of binary edges\n");
                 if(opt_dir>0)
                 {
-                    x2 = read_node_list_xatts_double(file_s, N_nodes, 2, header);
+                    x2 = read_node_list_xatts_double(file_s, N_nodes, 2, header, opt_verbose);
                     xmax = max_value_double(x2[0],N_nodes);
                     ymax = max_value_double(x2[1],N_nodes);
                     w_max=xmax*ymax*exp(xmax*ymax)*gamma/(1+gamma*(exp(xmax*ymax)-1));
                 }else{
-                    x2 = read_node_list_xatts_double(file_s, N_nodes, 1, header);
+                    x2 = read_node_list_xatts_double(file_s, N_nodes, 1, header, opt_verbose);
                     xmax = max_value_double(x2[0],N_nodes);
                     w_max=xmax*xmax*exp(xmax*xmax)*gamma/(1+gamma*(exp(xmax*xmax)-1));
                 }
@@ -447,14 +447,14 @@ int main(int argc, char *argv[]){
                 // number of attributes to read: Exception (2 sets of lagrange multipliers) //
                 if(opt_dir>0)
                 {
-                    x2 = read_node_list_xatts_double(file_s, N_nodes, 4, header);
+                    x2 = read_node_list_xatts_double(file_s, N_nodes, 4, header, opt_verbose);
                     xmax = max_value_double(x2[0],N_nodes);
                     ymax = max_value_double(x2[1],N_nodes);
                     zmax = max_value_double(x2[2],N_nodes);
                     wmax = max_value_double(x2[3],N_nodes);
                     w_max=xmax*ymax*exp(xmax*ymax)*zmax*wmax/(1+zmax*wmax*(exp(xmax*ymax)-1));
                 }else{
-                    x2 = read_node_list_xatts_double(file_s, N_nodes, 2, header);
+                    x2 = read_node_list_xatts_double(file_s, N_nodes, 2, header, opt_verbose);
                     xmax = max_value_double(x2[0],N_nodes);
                     zmax = max_value_double(x2[1],N_nodes);
                     w_max=xmax*xmax*exp(xmax*xmax)*zmax*zmax/(1+zmax*zmax*(exp(xmax*xmax)-1));
@@ -466,12 +466,12 @@ int main(int argc, char *argv[]){
                 printf("\t\t Warning: The entropy calculation will only include the terms corresponding to the binary structure \n");                       
                 if(opt_dir>0)
                 {
-                    x2 = read_node_list_xatts_double(file_s, N_nodes, 2, header); // degree lagrange sequence (double)
+                    x2 = read_node_list_xatts_double(file_s, N_nodes, 2, header, opt_verbose); // degree lagrange sequence (double)
                     xmax = max_value_double(x2[0],N_nodes);
                     ymax = max_value_double(x2[1],N_nodes);
                     E_av = w_graph_compute_E_binary_directed(x2, N_nodes, opt_self);    // compute expected degree, stop if E>T:
                 }else{
-                    x2 = read_node_list_xatts_double(file_s, N_nodes, 1, header); // sdegree lagrange sequence sequence (double)
+                    x2 = read_node_list_xatts_double(file_s, N_nodes, 1, header, opt_verbose); // sdegree lagrange sequence sequence (double)
                     xmax = max_value_double(x2[0],N_nodes);
                     E_av = w_graph_compute_E_binary_undirected(x2[0], N_nodes, opt_self); // compute expected degree, stop if E>T:
                 }
@@ -642,7 +642,7 @@ int main(int argc, char *argv[]){
     if(opt_soren>0)
     {
         printf("\t Loading original file to compute Sorensen\n");
-        ori = w_graph_read_edge_list(file_ori, N_nodes, opt_dir,header);
+        ori = w_graph_read_edge_list(file_ori, N_nodes, opt_dir,header, opt_verbose);
     }
 /***********************************************************************
     Start of ensemble reps!
@@ -926,7 +926,7 @@ int main(int argc, char *argv[]){
             if (opt_verbose>0) printf("... Graph stats ... \n");
             if(opt_dist>0)
             {
-                w_graph_dist_all_stats(WG, N_nodes, 0,  bin_exp, av_k, opt_dir,opt_self,dist,randgsl,dmax);
+                w_graph_dist_all_stats(WG, N_nodes, 0,  bin_exp, opt_dir,opt_self,dist,randgsl,dmax,opt_verbose);
             }else{
                 w_graph_all_stats(WG, N_nodes, r, bin_exp, av_k, opt_dir, opt_self, -1);
             }
@@ -1015,11 +1015,11 @@ int main(int argc, char *argv[]){
     if (opt_verbose>0) printf("... Printing ensemble stats ... \n");
     if(opt_dist>0)
     {
-        w_graph_dist_all_stats_ensemble_print(acc_ensemble, len, reps, N_nodes,av_k,opt_dir);
+        w_graph_dist_all_stats_ensemble_print(acc_ensemble, len, reps, N_nodes,opt_dir);
     }else{
-        w_graph_all_stats_ensemble_print(acc_ensemble, 2, reps, N_nodes, av_k, opt_dir);
+        w_graph_all_stats_ensemble_print(acc_ensemble, 2, reps, N_nodes, opt_dir);
     }
-    w_graph_node_stats_ensemble_print(reps, N_nodes, Tcont, node_cont, node_cont2, node_nonzero, av_k, bin_exp,len_acc_nodes, opt_dir);
+    w_graph_node_stats_ensemble_print(reps, N_nodes, Tcont, node_cont, node_cont2, node_nonzero, bin_exp,len_acc_nodes, opt_dir);
     if(opt_entropy)
     {
         sprintf(cadena,"N%davs%8.5fentropies.hist",N_nodes,av_k);
@@ -1036,3 +1036,4 @@ int main(int argc, char *argv[]){
     free(entropy_seq);
     return 0;
 }
+

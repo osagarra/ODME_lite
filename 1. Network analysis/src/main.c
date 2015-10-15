@@ -224,14 +224,14 @@ int main(int argc, char *argv[]){
  ************************************************************************/ 	
 	if(opt_dist>0)
 	{
-		dist = read_distances(file_d,N_nodes,header,opt_log);
+		dist = read_distances(file_d,N_nodes,header,opt_log, verbose);
 	}
 	W_GRAPH* WG;
     W_GRAPH* WGf;
     double** x2 = cast_mat_double(2,N_nodes);
     if(opt_filter>0)// if necessary, apply filter
     {
-        WGf = w_graph_read_edge_list(file_s, N_nodes, opt_dir,header);
+        WGf = w_graph_read_edge_list(file_s, N_nodes, opt_dir,header, verbose);
         // load xy's
         if(cases==0)
         {
@@ -240,16 +240,16 @@ int main(int argc, char *argv[]){
             //x2[1] = vec_int_to_double(xx2[1], N_nodes);
             //T = w_graph_total_weight(WGf, N_nodes);
             //scale_matrix(x2, 2, N_nodes, 1./sqrt((double)T));
-            x2 = read_node_list_xatts_double(xypath, N_nodes, 2, header);
+            x2 = read_node_list_xatts_double(xypath, N_nodes, 2, header, verbose);
         }else{
-            x2 = read_node_list_xatts_double(xypath, N_nodes, 2, header);
+            x2 = read_node_list_xatts_double(xypath, N_nodes, 2, header, verbose);
         }
         printf("Filtering graph (may take a while)...\n");
         if(opt_dir==0)
         {
-            WG = w_graph_filter_xij(WGf, x2[0], x2[0], N_nodes, ci, cases, M);
+            WG = w_graph_filter_xij(WGf, x2[0], x2[0], N_nodes, ci, cases, M, verbose);
         }else{
-            WG = w_graph_filter_xij(WGf, x2[0], x2[1], N_nodes, ci, cases, M);
+            WG = w_graph_filter_xij(WGf, x2[0], x2[1], N_nodes, ci, cases, M, verbose);
         }
         free_mat_double(x2,2);
 		T = w_graph_total_weight(WG, N_nodes);
@@ -263,7 +263,7 @@ int main(int argc, char *argv[]){
 			abort();
 		}
     }else{
-        WG = w_graph_read_edge_list(file_s, N_nodes, opt_dir,header);
+        WG = w_graph_read_edge_list(file_s, N_nodes, opt_dir,header, verbose);
     } 
 	xx2 = w_graph_compute_s(WG, N_nodes);
 	T = w_graph_total_weight(WG, N_nodes);
@@ -288,18 +288,18 @@ int main(int argc, char *argv[]){
 	int E;
 	int * w = w_graph_compute_w(WG, N_nodes, &E, -1);
 	w_max= max_value_int(w,E);
-	printf("-- wmax for histogram: %d\n",w_max);
+	if (verbose>0) printf("-- wmax for histogram: %d\n",w_max);
 	/// extended stats with distance ////
 	if (verbose>0) printf("... Graph stats ... \n");
 	if (opt_dist>0)
 	{
-		w_graph_dist_all_stats(WG, N_nodes, 0,  bin_exp, av_k, opt_dir, self_opt,dist,randgsl,dmax);
+		w_graph_dist_all_stats(WG, N_nodes, 0,  bin_exp, opt_dir, self_opt,dist,randgsl,dmax, verbose);
 	}else{
-		w_graph_all_stats(WG, N_nodes, 0, bin_exp, av_k, opt_dir, self_opt, 0);
+		w_graph_all_stats(WG, N_nodes, 0, bin_exp, opt_dir, self_opt, 0, verbose);
 	}
 	if (verbose>0) printf("... Node stats ... \n");
-	w_graph_node_stats_list(WG,N_nodes,0, av_k, opt_dir, opt_clust, self_opt);
-	printf("# Multi-Edge Net entropy per event: %f\n",w_graph_entropy_multinomial(WG,N_nodes,opt_dir));
+	w_graph_node_stats_list(WG,N_nodes,0, opt_dir, opt_clust, self_opt, verbose);
+	if (verbose>0) printf("# Multi-Edge Net entropy per event: %f\n",w_graph_entropy_multinomial(WG,N_nodes,opt_dir));
 	w_graph_free_nodes(WG, N_nodes);
 	free(WG);
 }

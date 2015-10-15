@@ -585,6 +585,10 @@ W_GRAPH* custompij_ZIP_undirected_graph(double**pij_b, double**pij,  int N_nodes
         {
 			// bernouilli trial first //
 			p_b = pij_b[i][j];
+			if(gsl_finite(p_b)!=1)
+			{
+				p_b = 1-1e-15;
+			}
 			p = gsl_rng_uniform(randgsl);
 			if(p<=p_b)
 			{
@@ -687,6 +691,10 @@ W_GRAPH* custompij_ZIP_directed_graph(double**pij_b, double**pij, int N_nodes , 
         {
 			// bernouilli trial first //
 			p_b = pij_b[i][j];
+			if(gsl_finite(p_b)!=1)
+			{
+				p_b = 1-1e-15;
+			}
 			p = gsl_rng_uniform(randgsl);
 			if(p<=p_b)
 			{
@@ -779,6 +787,10 @@ W_GRAPH* custompij_ZIG_undirected_graph(double**pij_b, double**pij,  int N_nodes
         {
 			// bernouilli trial first //
 			p_b = pij_b[i][j];
+			if(gsl_finite(p_b)!=1)
+			{
+				p_b = 1-1e-15;
+			}
 			p = gsl_rng_uniform(randgsl);
 			if(p<=p_b)
 			{
@@ -881,6 +893,10 @@ W_GRAPH* custompij_ZIG_directed_graph(double**pij_b, double**pij, int N_nodes , 
         {
 			// bernouilli trial first //
 			p_b = pij_b[i][j];
+			if(gsl_finite(p_b)!=1)
+			{
+				p_b = 1-1e-15;
+			}
 			p = gsl_rng_uniform(randgsl);
 			if(p<=p_b)
 			{
@@ -2956,6 +2972,16 @@ W_GRAPH* fixedks_binomial_undirected_graph(double**x, int N_nodes , int layers, 
         {
 			// bernouilli trial first //
 			pij = x[1][i]*x[1][j]*(pow(1.+x[0][i]*x[0][j],layers)-1.) / (1.+x[1][i]*x[1][j]*(pow(1.+x[0][i]*x[0][j],layers)-1.));
+			if(gsl_finite(pij)!=1)
+			{
+				if(x[1][i]*x[1][j]*pow(1.+x[0][i]*x[0][j],-layers)<1e-8)
+				{
+					//printf("x:%f y:%f z:%f w:%f, id1 :%d  id2:%d | aux_dum:%f\n",x[0][i],x[1][j],x[2][i],x[3][j],i,j,aux_dum);
+					pij = 1-1e-15;
+				}else{
+					abort();
+				}
+			}
 			p = gsl_rng_uniform(randgsl);
 			if(p<=pij)
 			{
@@ -3065,6 +3091,16 @@ W_GRAPH* fixedks_binomial_directed_graph(double**x, int N_nodes , int layers, gs
         {
 			// bernouilli trial first //
 			pij = x[2][i]*x[3][j]*(pow(1.+x[0][i]*x[1][j],layers)-1.) / (1.+x[2][i]*x[3][j]*(pow(1.+x[0][i]*x[1][j],layers)-1.));
+			if(gsl_finite(pij)!=1)
+			{
+				if(x[2][i]*x[3][j]*pow(1.+x[0][i]*x[1][j],-layers)<1e-8)
+				{
+					//printf("x:%f y:%f z:%f w:%f, id1 :%d  id2:%d | aux_dum:%f\n",x[0][i],x[1][j],x[2][i],x[3][j],i,j,aux_dum);
+					pij = 1-1e-15;
+				}else{
+					abort();
+				}
+			}
 			p = gsl_rng_uniform(randgsl);
 			if(p<=pij)
 			{
@@ -3162,8 +3198,18 @@ W_GRAPH* fixedks_poisson_undirected_graph(double**x, int N_nodes , gsl_rng* rand
     {    
         for(j=0;j<i;j++)
         {
-			// bernouilli trial first //
 			pij = x[1][i]*x[1][j]*(exp(x[0][i]*x[0][j])-1.) / (1.+x[1][i]*x[1][j]*(exp(x[0][i]*x[0][j])-1.));
+			// bernouilli trial first //
+			if(gsl_finite(pij)!=1)
+			{
+				if(x[1][i]*x[1][j]*exp(-x[0][i]*x[0][j])<1e-8)
+				{
+					//printf("x:%f y:%f z:%f w:%f, id1 :%d  id2:%d | aux_dum:%f\n",x[0][i],x[1][j],x[2][i],x[3][j],i,j,aux_dum);
+					pij = 1-1e-15;
+				}else{
+					abort();
+				}
+			}
 			p = gsl_rng_uniform(randgsl);
 			if(p<=pij)
 			{
@@ -3274,6 +3320,16 @@ W_GRAPH* fixedks_poisson_directed_graph(double**x, int N_nodes , gsl_rng* randgs
         {
 			// bernouilli trial first //
 			pij = x[2][i]*x[3][j]*(exp(x[0][i]*x[1][j])-1.) / (1.+x[2][i]*x[3][j]*(exp(x[0][i]*x[1][j])-1.));
+			if(gsl_finite(pij)!=1)
+			{
+				if(x[2][i]*x[3][j]*exp(-x[0][i]*x[1][j])<1e-8)
+				{
+					//printf("x:%f y:%f z:%f w:%f, id1 :%d  id2:%d | aux_dum:%f\n",x[0][i],x[1][j],x[2][i],x[3][j],i,j,aux_dum);
+					pij = 1-1e-15;
+				}else{
+					abort();
+				}
+			}
 			p = gsl_rng_uniform(randgsl);
 			if(p<=pij)
 			{
