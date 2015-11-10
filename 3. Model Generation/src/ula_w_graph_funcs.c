@@ -97,6 +97,9 @@ W_GRAPH* w_graph_alloc(int N_nodes){
     // not setting these values, so error jumps if user does not set them
     //WG->opt_dir = 1; // directed by defatult (values set for backwards compatibliity)
     //WG->opt_self = 1; // self loops accepted by default 
+    WG->E = -1;
+    WG->T = -1;
+    WG->L = -1;
     return WG;
 }
 
@@ -639,12 +642,16 @@ double ** w_graph_compute_clust(W_GRAPH * WG, int N_nodes){ // 2 cols: unweighte
 int w_graph_total_weight( W_GRAPH* WG, int N_nodes){
     int i;
     int T;
-    T=0;
-    for(i=0;i<N_nodes;i++)
+    T=WG->T;
+    if(T<0)
     {
-        T+=(int)WG->node[i].sout;
-    }
-    WG->T = T;
+		T = 0;
+		for(i=0;i<N_nodes;i++)
+		{
+			T+=(int)WG->node[i].sout;
+		}
+		WG->T = T;
+	}
     return T;
 }
 
@@ -653,35 +660,42 @@ int w_graph_total_edges( W_GRAPH* WG, int N_nodes){
     int i,j;
     //int T,aux2;
     int aux2;
-    aux2=0;
-    for(i=0;i<N_nodes;i++)
+    aux2=WG->E;
+    if(aux2<0)
     {
-        //T+=WG->node[i].kout;
-        for(j=0;j<WG->node[i].kout;j++)
-        {
-			aux2++;
-			if(WG->node[i].out[j]==i) // if selfs count twice
+		aux2 = 0;
+		for(i=0;i<N_nodes;i++)
+		{
+			//T+=WG->node[i].kout;
+			for(j=0;j<WG->node[i].kout;j++)
 			{
 				aux2++;
+				if(WG->node[i].out[j]==i) // if selfs count twice
+				{
+					aux2++;
+				}
 			}
 		}
-    }
-    //return T;
-    WG->E = aux2;
+		WG->E = aux2;
+	}
     return aux2;
 }
 
 int w_graph_total_edgepairs( W_GRAPH* WG, int N_nodes){
     // counts total number of edge pairs
     int L;
-    if (WG->opt_self>0)
-    {
-		L = N_nodes*N_nodes+N_nodes; // we coutn self-loops twice to adapt to undirected
-
-	}else{
-		L = N_nodes*(N_nodes-1);
+    L = WG->L;
+	if(L<0)
+	{
+		L = 0;
+		if (WG->opt_self>0)
+		{
+			L = N_nodes*N_nodes+N_nodes; // we coutn self-loops twice to adapt to undirected
+		}else{
+			L = N_nodes*(N_nodes-1);
+		}
+		WG->L = L;
 	}
-	WG->L = L;
     return L;
 }
 
