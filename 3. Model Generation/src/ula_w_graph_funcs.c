@@ -100,6 +100,8 @@ W_GRAPH* w_graph_alloc(int N_nodes){
     WG->E = -1;
     WG->T = -1;
     WG->L = -1;
+    WG->opt_dir = -1;
+	WG->opt_self = -1;
     return WG;
 }
 
@@ -1448,7 +1450,8 @@ void w_graph_print_entropy(double* seq,int len,char* output){
 	}
 	mins = min_value_double(seq,len);
 	maxs = max_value_double(seq,len);
-	eps = (maxs-mins)/1000.;
+	printf("### %f %f | %d ####\n",mins,maxs,bins);fflush(stdout);
+	eps = (maxs-mins)/mins;
     mins = mins - mins*eps;
     maxs = maxs+maxs*eps;
     if(mins<0) mins = 0;
