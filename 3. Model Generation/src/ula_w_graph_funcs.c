@@ -100,8 +100,6 @@ W_GRAPH* w_graph_alloc(int N_nodes){
     WG->E = -1;
     WG->T = -1;
     WG->L = -1;
-    WG->opt_dir = -1;
-	WG->opt_self = -1;
     return WG;
 }
 
@@ -1450,8 +1448,7 @@ void w_graph_print_entropy(double* seq,int len,char* output){
 	}
 	mins = min_value_double(seq,len);
 	maxs = max_value_double(seq,len);
-	printf("### %f %f | %d ####\n",mins,maxs,bins);fflush(stdout);
-	eps = (maxs-mins)/mins;
+	eps = (maxs-mins)/1000.;
     mins = mins - mins*eps;
     maxs = maxs+maxs*eps;
     if(mins<0) mins = 0;
@@ -2546,7 +2543,7 @@ W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, doub
     int t;
     int tot = 0;
     int etot = 0;
-    int* l;
+    int* l = cast_vec_int(2);
     int theta;
     assert(gamma<=1);
     assert(gamma>=0);
@@ -2566,11 +2563,11 @@ W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, doub
             t = WG->node[i].w_out[j];
             mu = x[i]*y[id_node];
             // if theta==1 keep, else, not keep
-            if(mu==0)
+            if(mu<=0)
             {
                 theta = 1; // surely not in interval, keep
             }else{
-                l = find_tmintmax_xy(mu,gamma,mode,M);                
+                find_tmintmax_xy(l,mu,gamma,mode,M);                
                 if((l[0]<0)&&(l[1]<0))
                 {
                     theta = 0; // surely in interval, do not keep
@@ -2599,24 +2596,27 @@ W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, doub
 
 
 
-int* find_tmintmax_xy(double xy, double gamma, int mode, int M)
+void find_tmintmax_xy(int* tt, double xy, double gamma, int mode, int M)
 {
     assert(gamma<=1);
     assert(gamma>=0);
+    // restart bounds //
+    tt[0] = 0;
+    tt[1] = 0;
     // finds T such that p(x<=T) = gamma;
-    int* tt = cast_vec_int(2);
     double mu,p,P0;
-    int l1,l2,k,aux;
+    int l1,l2,k,aux,mu_i;
     int t;
     //int c;
     // mode selection //
     if (mode==0)
     {
         mu = xy;
-        t = (int)round(mu);
+        mu_i = (int)mu;
+        t = (int)rint(mu);
         tt[0] = t;
         tt[1] = t;        
-        if(mu<=t) // forward
+        if(mu_i<=t) // forward
         {
             k=1;
             l1 = t;
@@ -2648,10 +2648,10 @@ int* find_tmintmax_xy(double xy, double gamma, int mode, int M)
             }
             P0 += gsl_ran_poisson_pdf(aux,mu);                
             //c++;
-            if(fabs(aux-mu)>10*sqrt(mu)) // 10 std away!
+            if((double)(l2-l1)>10*sqrt(mu)) // 10 std away!
             {
-                l1 = -1;
-                l2 = -1;
+                l1 = -10;
+                l2 = -10;
                 break; //break if too large
             }
             //if(mu>100)printf("c :%d t:%d aux:%d xy:%f k:%d P0:%f Gamma:%f\n",c,t,aux,xy,k,P0,gamma);
@@ -2659,10 +2659,11 @@ int* find_tmintmax_xy(double xy, double gamma, int mode, int M)
     }else if(mode==1){
         mu = M*(xy/(1+xy));        
         p = xy/(1+xy);
-        t = (int)round(mu);
+        t = (int)rint(mu);
+        mu_i = (int)mu;
         tt[0] = t;
         tt[1] = t;        
-        if(mu<=t) // forward
+        if(mu_i<=t) // forward
         {
             k=1;
             l1 = t;
@@ -2693,18 +2694,19 @@ int* find_tmintmax_xy(double xy, double gamma, int mode, int M)
             P0 += gsl_ran_binomial_pdf(aux,p,M);
             if(fabs(aux-mu)>10*sqrt(mu/(1+xy))) // 10 std away!
             {
-                l1 = -1;
-                l2 = -1;
+                l1 = -10;
+                l2 = -10;
                 break; //break if too large
             }
         }
     }else{
         mu = M*xy/(1.-xy);        
         p = (1.-xy);
-        t = (int)round(mu-xy/p);
+        t = (int)rint(mu-xy/p);
+        mu_i = (int)mu;
         tt[0] = t;
         tt[1] = t;        
-        if(mu<=t) // forward
+        if(mu_i<=t) // forward
         {
             k=1;
             l1 = t;
@@ -2736,8 +2738,8 @@ int* find_tmintmax_xy(double xy, double gamma, int mode, int M)
             // --> think about this! p(k) = {\Gamma(n + k) \over \Gamma(k+1) \Gamma(n) } p^n (1-p)^k
             if(fabs(aux-mu)>10*sqrt(mu/p)) // 10 std away!
             {
-                l1 = -1;
-                l2 = -1;
+                l1 = -10;
+                l2 = -10;
                 break; //break if too large
             }
         }
@@ -2745,7 +2747,8 @@ int* find_tmintmax_xy(double xy, double gamma, int mode, int M)
 	//printf("mu:%f t:%d xy:%f k:%d aux:%d l1:%d l2:%d P0:%f Gamma:%f\n",mu,t,xy,k,aux,l1,l2,P0,gamma);
     //printf("FInal values: %d %d %f\n",tt[0]-l2,tt[1]+l1,mu);
     tt[0] = l2;
-    if(l2<0) tt[0]=0;
+    if(l2==-1) tt[0]=0;
     tt[1] = l1;
-    return tt;
+    if(l1==-1) tt[1]=0;
+    return;
 }

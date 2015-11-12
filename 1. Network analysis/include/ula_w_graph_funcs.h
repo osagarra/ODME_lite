@@ -115,5 +115,5 @@ double w_graph_compute_sorensen_av(W_GRAPH* WGoriginal, double** pij, int N_node
  * Graph Filtering *
  ****************************************************************************/
 W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, double gamma, int mode, int M, int verbose);
-int* find_tmintmax_xy(double xy, double gamma, int mode, int M);
+void find_tmintmax_xy(int* tt,double xy, double gamma, int mode, int M);
 #endif
