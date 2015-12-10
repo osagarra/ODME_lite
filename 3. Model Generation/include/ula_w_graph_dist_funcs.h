@@ -22,8 +22,6 @@ double * w_graph_dist_compute_d_trips(W_GRAPH* WG, double ** d, int N_nodes, int
 gsl_histogram * w_graph_dist_compute_pij(W_GRAPH* WG, double ** d, int bins, int N_nodes, double max_d_edge, int opt_self, int opt_dir);
 /******* Net funcs from adj ******/
 double *w_graph_dist_compute_sij_edges(W_GRAPH* WG, double **d, int N_nodes, gsl_rng * randgsl);
-double *w_graph_dist_compute_s_out_edges(W_GRAPH* WG, int N_nodes);
-double *w_graph_dist_compute_s_in_edges(W_GRAPH* WG, int N_nodes);
 int w_graph_dist_compute_sij(int  **s, double ** dist, int origin, int dest, int N_nodes, gsl_rng * randgsl, int perturb);
 /******* Stats ******/
 void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, int opt_dir, int self_opt, double** dist, gsl_rng * randgsl, double dmax, int verbose);

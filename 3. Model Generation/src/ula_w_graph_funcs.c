@@ -1038,6 +1038,57 @@ double * w_graph_compute_w_ss(W_GRAPH* WG, int N_nodes, int weight){
     assert(aux==E);
     return ww;
 }
+
+double * w_graph_compute_w_s(W_GRAPH* WG, int N_nodes, int weight, int direction){
+	// computes total weight average // if direction>0 out, otherwise, in
+	int opt_self = WG->opt_self;
+    int E;
+    E=w_graph_total_edgepairs(WG,N_nodes);
+    double* ww=cast_vec_double(E);
+    int i,j,aux;
+    aux=0;
+    for(i=0;i<N_nodes;i++)
+    {
+        for(j=0;j<N_nodes;j++)
+        {
+			if((opt_self>0)||(i!=j))
+			{
+				if(direction>0)
+				{
+					if (weight>0)
+					{
+						ww[aux]=((double)WG->node[i].sout);
+					}else{
+						ww[aux]=((double)WG->node[i].kout);
+					}
+				}else{
+					if (weight>0)
+					{
+						ww[aux]=((double)WG->node[j].sin);
+					}else{
+						ww[aux]=((double)WG->node[j].kin);
+					}
+				}
+				aux++;
+				/*
+				if(i==j)
+				{
+					if (weight>0)
+					{
+						ww[aux]=((double)WG->node[i].sout)*((double)WG->node[j].sin);
+					}else{
+						ww[aux]=((double)WG->node[i].kout)*((double)WG->node[j].kin);
+					}
+					aux++;
+				}
+				*/
+            }
+        }
+    }
+    assert(aux==E);
+    return ww;
+}
+
 //double ** w_graph_compute_xy(w_graph * node, int N_nodes){
     
     //int i,j;
@@ -1525,9 +1576,9 @@ void w_graph_print_entropy(double* seq,int len,char* output){
 	}
 	mins = min_value_double(seq,len);
 	maxs = max_value_double(seq,len);
-	eps = (maxs-mins)/1000.;
-    mins = mins - mins*eps;
-    maxs = maxs+maxs*eps;
+	//eps = (maxs-mins)/1000.;
+    //mins = mins - mins*eps;
+    //maxs = maxs+maxs*eps;
     if(mins<0) mins = 0;
     if(maxs<0) maxs = 0;
     if(mins>=maxs) maxs = mins+1;
@@ -2087,6 +2138,8 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, int op
 	double *wss=w_graph_compute_wp_ss(WG, N_nodes, 1);
     double *wkk=w_graph_compute_wp_ss(WG, N_nodes, -1);
     double *wss_zeros=w_graph_compute_w_ss(WG, N_nodes, 1);
+	double *ws_zeros_o = w_graph_compute_w_s(WG, N_nodes, 1, 1);
+	double *ws_zeros_i = w_graph_compute_w_s(WG, N_nodes, 1, -1);
 
     char cadena[100];
     
@@ -2203,7 +2256,40 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, int op
     free(sout);
     free(wss_zeros);
     free(xranges);
-    free_mat_double(yy,4);    
+    free_mat_double(yy,4);  
+    
+    /// average weight as func of sout /////
+    sout=vec_int_to_double(w_zeros,L);
+    xranges=log_bins_double(0, max_value_double(ws_zeros_o,L) , bin_exp, &xbins);
+    yy=y_of_x(ws_zeros_o, sout, xranges,  L,  xbins);
+	if(opt_dir>0)
+	{
+	    sprintf(cadena,"N%d_w_s_o.hist",N_nodes);
+	}else{
+	    sprintf(cadena,"N%d_undir_w_s_o.hist",N_nodes);
+	}
+    print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
+    free(sout);
+    free(xranges);
+    free_mat_double(yy,4);
+    /// average weight as func of sin /////
+    sout=vec_int_to_double(w_zeros,L);
+    xranges=log_bins_double(0, max_value_double(ws_zeros_i,L) , bin_exp, &xbins);
+    yy=y_of_x(ws_zeros_i, sout, xranges,  L,  xbins);
+	if(opt_dir>0)
+	{
+	    sprintf(cadena,"N%d_w_s_i.hist",N_nodes);
+	}else{
+	    sprintf(cadena,"N%d_undir_w_s_i.hist",N_nodes);
+	}
+    print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
+    free(sout);
+    free(xranges);
+    free_mat_double(yy,4);
+    
+  
+    free(ws_zeros_o);  
+    free(ws_zeros_i);  
 
 //// free all
     free_mat_int(s,2);
