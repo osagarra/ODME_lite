@@ -249,7 +249,7 @@ W_GRAPH* multinomial_undirected_graph(double* ps, int N_nodes , int T, gsl_rng* 
         printf("# I generated an uncorrelated weighted net\n");
 		printf("# <s>_out=%.3lf+-%.3lf, <k>_out=%.3lf+-%.3lf\n",sout_mean, sout_std, kout_mean, kout_std);
 		printf("# Number of Empty nodes: (out) %d\n",nulls_out);
-		printf("# Total Entropy S: %f\n",w_graph_entropy_multinomial(WG,N_nodes,self_opt));
+		printf("# Total Max Likelyhood Multi Edge ensemble entropy estimate S: %f\n",w_graph_ML_ensemble_entropy_multinomial(WG,N_nodes,self_opt));
     }
 	return WG;
     
@@ -331,7 +331,7 @@ W_GRAPH* custompij_poisson_undirected_graph(double**pij,  int N_nodes , gsl_rng*
 		printf("# <s>_out=%.3lf+-%.3lf, <k>_out=%.3lf+-%.3lf\n",sout_mean, sout_std, kout_mean, kout_std);
 		printf("# Number of Empty nodes: (out) %d\n",nulls_out);
 		printf("# Total T:%d (original : %f) \n",aux2,T/2);
-		printf("# Total Entropy S: %f\n",w_graph_entropy_multinomial(WG,N_nodes,self_opt));
+		printf("# Total Max Likelyhood Multi Edge ensemble entropy estimate S: %f\n",w_graph_ML_ensemble_entropy_multinomial(WG,N_nodes,self_opt));
 	}
     return WG;
     
@@ -1288,7 +1288,7 @@ W_GRAPH* fixeds_poisson_undirected_graph2(double*x,  int N_nodes , gsl_rng* rand
 		printf("# <s>_out=%.3lf+-%.3lf, <k>_out=%.3lf+-%.3lf\n",sout_mean, sout_std, kout_mean, kout_std);
 		printf("# Number of Empty nodes: (out) %d\n",nulls_out);
 		printf("# Total T:%d (original : %f) \n",aux2,T/2);
-		printf("# Total Entropy S: %f\n",w_graph_entropy_multinomial(WG,N_nodes,self_opt));
+		printf("# Total Max Likelyhood Multi Edge ensemble entropy estimate S: %f\n",w_graph_ML_ensemble_entropy_multinomial(WG,N_nodes,self_opt));
 	}
     return WG;
     

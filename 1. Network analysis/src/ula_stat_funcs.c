@@ -88,11 +88,11 @@ int * histogram_int(int* vect, int minx, int maxx, int len ){
     int * hist=cast_vec_int(maxx);
     for(i=0;i<len;i++)
     {
-	assert(vect[i]>=0);
-	if((vect[i]<=maxx) || (vect[i]>=minx))
+		assert(vect[i]>=0);
+		if((vect[i]<=maxx) || (vect[i]>=minx))
 	    {
-		hist[vect[i]]++;
-		max_len=maxeq_int(vect[i],max_len);
+			hist[vect[i]]++;
+			max_len=maxeq_int(vect[i],max_len);
 	    }
     }
     hist= safe_int_realloc(hist,maxx,max_len,0);
@@ -148,6 +148,31 @@ gsl_histogram * histogram_double(double* vect, double minx, double maxx, int nbi
     }
     return hist;
 }
+gsl_histogram * histogram_int2(int* vect, int minx, int maxx, int len){
+	// trick because gsl does not accept int histograms //
+	int nbins = maxx-minx+1; // one more to add also the max value
+	gsl_histogram * hist = gsl_histogram_alloc (nbins);
+    //gsl_histogram_set_ranges_uniform(hist, minx/1.-1e-15, maxx/1.+1e-15); // BUG GSL!
+    // by hand
+    double* range = cast_vec_double(nbins+1); // one more because of ranges
+    int a,i,vv;
+    vv = minx;
+    for(i=0;i<nbins+1;i++)
+    {
+		range[i]= vv-1e-12; // a bit less because integer numbers
+		vv += 1;
+	}
+	assert(vv==maxx+2); // check all good
+    a = gsl_histogram_set_ranges (hist, range, nbins+1); // set ranges
+    //
+    for(i=0;i<len;i++)
+    {
+        gsl_histogram_increment (hist, vect[i]);
+    }
+    return hist;
+}
+
+
 // This histogram does not work properly (needs additional normalization by bin-width)
 gsl_histogram * histogram_double_log(double* vect, double minx, double maxx, double expo, int len){ // not working correctly!!!!!
     int i=0;
@@ -374,7 +399,7 @@ double * log_bins_double(double minx, double maxx, double expo, int * numbins){
 		}
     	//printf("%lf,%lf %d\n",pos,deltax,check);fflush(stdout);
 		//printf("%lf\n",bins [i-1]);fflush(stdout);
-	}while(pos<=maxx);
+	}while(pos<maxx);
 	//bins[i-1]=maxx+maxx*0.1*(maxx-bins[i-2]);
 	//bins[i-1]=maxx+1;
 	//printf("%lf %lf\n",bins[i-1],maxx);fflush(stdout);
@@ -393,10 +418,10 @@ double * log_bins_double(double minx, double maxx, double expo, int * numbins){
 /************** 1 D **************************/
 // Sets and updates accumulators to aggregate during simulation --> valid for all
 gsl_histogram * set_acc_int(int minv, int maxv){
-	double* dummy=cast_vec_double(2);
+	int* dummy=cast_vec_int(2);
 	dummy[0]=dummy[1]=0;
 	if(minv>0) minv-=1;
-	gsl_histogram *  acc_k=histogram_double(dummy, (double)minv, (double)(maxv), (double)maxv+1, 2);
+	gsl_histogram *  acc_k=histogram_int2(dummy, (double)minv, (double)(maxv), 2);
 	gsl_histogram_reset (acc_k);
 	return acc_k;
 }
@@ -635,7 +660,8 @@ void print_acc(char *input_name, gsl_histogram * acc1, gsl_histogram * acc2){
 	//acc2 corresponds to variances!
 	FILE* input=open_file("w",input_name);
 	//printf("... Printing Hist list...\n");
-	fprintf(input,"# Mean:%.4lf Std:%.4lf Norm:%.4lf Max:%.4lf Min:%.4lf Max_bin:%.4lf Min_bin:%.4lf\n",(double)gsl_histogram_mean(acc1),(double)gsl_histogram_sigma(acc1),(double)gsl_histogram_sum(acc1),(double)gsl_histogram_max_val(acc1),(double)gsl_histogram_min_val(acc1),(double) gsl_histogram_max_bin(acc1), (double)gsl_histogram_min_bin(acc1));
+	fprintf(input,"# Mean:%.4lf Std:%.4lf Norm:%.4lf Max:%.4lf Min:%.4lf Max_bin:%.4lf Min_bin:%.4lf\n",(double)gsl_histogram_mean(acc1),(double)gsl_histogram_sigma(acc1),
+	(double)gsl_histogram_sum(acc1),gsl_histogram_max (acc1),gsl_histogram_min (acc1), (double) gsl_histogram_max_val(acc1), (double)gsl_histogram_min_val(acc1));
 	fprintf(input,"#Bin_id Bin_min Bin_max Bin_val Bin_std CCDF\n");
 	int m;
 	int len=gsl_histogram_bins (acc1);
@@ -652,7 +678,7 @@ void print_acc(char *input_name, gsl_histogram * acc1, gsl_histogram * acc2){
 	{
 	    gsl_histogram_get_range (acc1, m, &bmin, &bmax);
 	    bin_val=gsl_histogram_get (acc1, m);
-	    if(bin_val>1e-15)
+	    if(bin_val>0)
 	    {
 	    	fprintf(input, "%d %lf %lf %lf %lf %lf\n",m, bmin, bmax, bin_val ,sqrt( gsl_histogram_get(acc2,m)+1e-15), 1.-CDF/norm);
 	    }

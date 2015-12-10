@@ -97,11 +97,13 @@ double *w_graph_dist_compute_sij_edges(W_GRAPH* WG, double **d, int N_nodes, gsl
 			dest = WG->node[i].out[j];
             d_list[aux]=(double)w_graph_dist_compute_sij(s,d,i,dest,N_nodes,randgsl,1); // s_ij origin
             aux++;
+            /*
             if(WG->node[i].out[j]==i) // count twice
             {
                 d_list[aux]=0;
                 aux++;
             }
+            */
         }
     }
 	assert(aux==E1);
@@ -120,11 +122,13 @@ double *w_graph_dist_compute_s_out_edges(W_GRAPH* WG, int N_nodes){
 			dest = WG->node[i].out[j];
 			d_list[aux]=(double)WG->node[dest].sout;
             aux++;
+            /*
             if(WG->node[i].out[j]==i) // count twice
             {
 				d_list[aux]=(double)WG->node[i].sout;
                 aux++;
             }
+            */
         }
     }
 	assert(aux==E1);
@@ -143,11 +147,13 @@ double *w_graph_dist_compute_s_in_edges(W_GRAPH* WG, int N_nodes){
 			dest = WG->node[i].out[j];
 			d_list[aux]=(double)WG->node[dest].sin;
             aux++;
+            /*
             if(WG->node[i].out[j]==i) // count twice
             {
 				d_list[aux]=(double)WG->node[i].sin;
                 aux++;
             }
+            */
         }
     }
 	assert(aux==E1);
@@ -203,11 +209,13 @@ double * w_graph_dist_compute_d_edges(W_GRAPH* WG, double ** d, int N_nodes, int
 			dest = WG->node[i].out[j];
 			d_edges[aux]=d[maxeq_int(i,dest)][mineq_int(i,dest)];;
             aux++;
+            /*
             if(WG->node[i].out[j]==i) // count twice
             {
                 d_edges[aux]=0;
                 aux++;
             }
+            */
         }
     }
     assert(aux==*num_edges);
@@ -303,11 +311,11 @@ void w_graph_dist_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, i
     double** yy;
     
     /// w histogram /////
-    sout=vec_int_to_double(w,E);
+    //sout=vec_int_to_double(w,E);
     q=max_value_int(w,E);
     if(verbose>0) printf("\t Max weight: %d | av existing weight: %.3f+-%.3f \n",q,mean_vec_int(w, E),sqrt(var_vec_int(w, E)));
-    h1=histogram_double(sout,0,q,q,E);
-    free(sout);
+    h1=histogram_int2(w,0,q,E);
+    //free(sout);
     //sprintf(cadena,"run_%dN%d_w.hist",run,N_nodes);
 	if(opt_dir>0)
 	{
@@ -606,7 +614,7 @@ void w_graph_dist_all_stats_ensemble_print(gsl_histogram** acc, int len, int rep
 /******* Net entropy ******/
 /**************************/
 
-double w_graph_entropy_poisson_dist(W_GRAPH* WG, double** x,int N_nodes, double** dist, double gamma, int opt_self, int opt_dir){
+double w_graph_surprise_poisson_dist(W_GRAPH* WG, double** x,int N_nodes, double** dist, double gamma, int opt_self, int opt_dir){
 	double S,p,mu;
 	int i,j,t;
 	int out_d,in_d;
@@ -644,7 +652,7 @@ double w_graph_entropy_poisson_dist(W_GRAPH* WG, double** x,int N_nodes, double*
 				}else{
 					p = 0;
 				}
-				S+= p*log(p);
+				S+= log(p);
 			}
         }
 	}

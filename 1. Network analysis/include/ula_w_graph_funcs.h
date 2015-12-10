@@ -27,9 +27,10 @@ void w_graph_add_multi_link_undirected(W_GRAPH * WG, int N_nodes, int origin, in
 /******* Printing ********/
 void w_graph_print_adj_list(W_GRAPH* WG, int N_nodes, char* output);
 
-/******* S & k's ********/
+/******* node features ********/
 int ** w_graph_compute_s(W_GRAPH* WG, int N_nodes);
 int ** w_graph_compute_k(W_GRAPH* WG, int N_nodes);
+int w_graph_nonempty_nodes(W_GRAPH* WG);
 double ** w_graph_compute_k_analitic(W_GRAPH* WG, int N_nodes, int self_opt);
 double w_graph_compute_E_binary_undirected(double* x, int N_nodes, int self_opt);
 double * w_graph_compute_k_binary_undirected(double* x, int N_nodes, int self_opt);
@@ -56,16 +57,16 @@ double * w_graph_compute_w_ss(W_GRAPH* WG, int N_nodes, int weight);
 /******* Distances *****/
 //double ** w_graph_compute_dists(W_GRAPH* WG, int N_nodes);
 /*******  Entropies *****/
-double w_graph_entropy_multinomial(W_GRAPH* WG, int N_nodes, int opt_dir);
-double w_graph_entropy_poisson(W_GRAPH* WG, double** x,int N_nodes, int opt_self, int opt_dir);
-double w_graph_entropy_geometric(W_GRAPH* WG, double**x, int N_nodes, int opt_self, int opt_dir);
-double w_graph_entropy_binomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir);
-double w_graph_entropy_negbinomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir);
-double w_graph_entropy_bernouilli(W_GRAPH* WG, double** x, int N_nodes, int opt_self, int opt_dir);
+double w_graph_ML_ensemble_entropy_multinomial(W_GRAPH* WG, int N_nodes, int opt_dir);
+double w_graph_surprise_poisson(W_GRAPH* WG, double** x,int N_nodes, int opt_self, int opt_dir);
+double w_graph_surprise_geometric(W_GRAPH* WG, double**x, int N_nodes, int opt_self, int opt_dir);
+double w_graph_surprise_binomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir);
+double w_graph_surprise_negbinomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir);
+double w_graph_surprise_bernouilli(W_GRAPH* WG, double** x, int N_nodes, int opt_self, int opt_dir);
 
-double w_graph_entropy_ZIP(W_GRAPH* WG, double** x, int N_nodes, double gamma, int opt_self, int opt_dir);
-double w_graph_entropy_ZIP2(W_GRAPH* WG, double** x, int N_nodes, int opt_self, int opt_dir);
-double w_graph_entropy_ZIB2(W_GRAPH* WG, double** x, int N_nodes, int layers, int opt_self, int opt_dir);
+double w_graph_surprise_ZIP(W_GRAPH* WG, double** x, int N_nodes, double gamma, int opt_self, int opt_dir);
+double w_graph_surprise_ZIP2(W_GRAPH* WG, double** x, int N_nodes, int opt_self, int opt_dir);
+double w_graph_surprise_ZIB2(W_GRAPH* WG, double** x, int N_nodes, int layers, int opt_self, int opt_dir);
 
 void w_graph_print_entropy(double* seq,  int len,char* output);
 
@@ -115,5 +116,5 @@ double w_graph_compute_sorensen_av(W_GRAPH* WGoriginal, double** pij, int N_node
  * Graph Filtering *
  ****************************************************************************/
 W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, double gamma, int mode, int M, int verbose);
-void find_tmintmax_xy(int* tt,double xy, double gamma, int mode, int M);
+double find_tmintmax_xy(int* tt,double xy, double gamma, int mode, int M);
 #endif

@@ -12,11 +12,11 @@ codes that I have written during the development of my PhD thesis. It
 is a package intended to be used for the analysis of many kinds of 
 networks, focusing specially on spatial, multi-edge networks.
 
-A multi-edge network is a weighted network composed of 
+A multi-edge network is a non binary network composed of 
 distinguishable, integer weights. A paradigmatic example of it are 
 Origin-Destination matrices used to represent flows between nodes or 
 locations. The present package is able to analyze many types of any 
-general form of weighted networks (being binary networks a particular case of them), 
+general form of non binary networks (being binary networks a particular case of them), 
 be them spatial or not.
 
 The package is structured in three separated modules which perform 
@@ -40,13 +40,14 @@ the weights are integer numbers.
 	[Europhysics Letters](http://iopscience.iop.org/0295-5075/107/3/38002/article;jsessionid=D22CAAF312F43653DA0C1279853CBF0C.c3)
 
 [3] Supersampling and network reconstruction of urban mobility.
-	Sagarra, O., Szell, M., Santi, P., and Ratti, C. Arxiv Preprint (2015)
+	Sagarra, O., Szell, M., Santi, P., and Ratti, C. PLoS One 10, e0134508 (2015)
 	[arXiv:1504.01939v1](http://arxiv.org/abs/1504.01939)
     [PLoS One 10, e0134508 (2015)](http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0134508)
 
-[4] Mind the edge! The role of adjacency matrix degeneration in maximum entropy weighted network models
-    Sagarra, O., Pérez-Vicente C. and Díaz-Guilera, A.
-    [](to be posted soon)
+[4] Role of adjacency-matrix degeneracy in maximum-entropy-weighted network models.
+    Sagarra, O., Pérez-Vicente C. and Díaz-Guilera, A. Phys. Rev. E 92, 052816
+    [arxiv:1509.01383](http://arxiv.org/abs/1509.01383)
+    [Physical Review E 92, 052816 (2015)](http://journals.aps.org/pre/abstract/10.1103/PhysRevE.92.052816)
 
 
 
@@ -70,7 +71,7 @@ as two well-known models: Radiation and sequential gravity model.
 
 ## Acknowledgements
 
-We would like to thank Pol Colomer and Sergio Oller for their very useful comments and suggestions.
+I would like to thank Pol Colomer and Sergio Oller for their very useful comments and suggestions.
 
 
 
@@ -94,3 +95,4 @@ You should have received a copy of the GNU General Public License along with the
 
 
 Check the DOCS/ folder in each module as well as their separate README files for details.
+

@@ -195,7 +195,7 @@ int main(int argc, char *argv[]){
             printf("\tC.I. cannot be larger or equal than 1 or smaller than 0! Aborting...\n");
             abort();
         }else{
-            printf("\tSelected C.I of %.3f\n",ci);
+            printf("\tSelected C.I of %.5f\n",ci);
         }
         
     }
@@ -253,6 +253,7 @@ int main(int argc, char *argv[]){
         }
         free_mat_double(x2,2);
 		T = w_graph_total_weight(WG, N_nodes);
+        //abort(); // only for special case!!!
 		if(T>0)
 		{
 			printf("\tPrinting filtered adj matrix\n");
@@ -262,6 +263,7 @@ int main(int argc, char *argv[]){
 			printf("\t Filter returned an empty net!\n");
 			abort();
 		}
+        //abort(); // only for special case!!!
     }else{
         WG = w_graph_read_edge_list(file_s, N_nodes, opt_dir,header, verbose);
     } 
@@ -299,7 +301,7 @@ int main(int argc, char *argv[]){
 	}
 	if (verbose>0) printf("... Node stats ... \n");
 	w_graph_node_stats_list(WG,N_nodes,0, opt_dir, opt_clust, self_opt, verbose);
-	if (verbose>0) printf("# Multi-Edge Net entropy per event: %f\n",w_graph_entropy_multinomial(WG,N_nodes,opt_dir));
+	if (verbose>0) printf("# ML ensemble Multi-Edge Net entropy per event: %f\n",w_graph_ML_ensemble_entropy_multinomial(WG,N_nodes,opt_dir));
 	w_graph_free_nodes(WG, N_nodes);
 	free(WG);
 }

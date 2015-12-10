@@ -169,7 +169,7 @@ int main(int argc, char *argv[]){
                 " *     -S Sorensen option: Compute sorensen with given original network as benchmark (int, default=0) \n"
                 " *         (warning: This option slows down the simulation)\n"
                 " *         -Q Path to original network to compare to, if wanted in edge list format: node_origin node_dest t_ij (int int int)\n"
-                " *     -E Entropy option: Compute entropy histogram for the various repetitions of the networks (int, default=0), only for more than 10 reps \n"
+                " *     -E Entropy option: Compute surprise histogram for the various repetitions of the networks (int, default=0), only for more than 10 reps \n"
                 " *         (warning: This option slows down the simulation)\n"
                 " *     -I Indistiguishable option (only for case of fixed degrees or fixed strengths see README) (>0 for indistinguishable weights) (Default =0) \n"
                 " *     -A Aggregated binary option (only for case of fixed degrees, strenghts or both, see README) (>0 for aggregated binary weights) (Default =0) \n"
@@ -305,6 +305,7 @@ int main(int argc, char *argv[]){
         {
             ps=cast_mat_double(N_nodes,N_nodes);
             printf("\t0:: Selected Case with non entropy models\n");
+            if(opt_entropy>0) printf("\t[Entropy/surprise calculation is not implemented]\n");
             if(opt_dist<=0)
             {
                 printf("\t\t Must provide cost matrix! Aborting...\n");
@@ -463,7 +464,7 @@ int main(int argc, char *argv[]){
             }else{
                 meth = 2;
                 printf("\t2:: Selected Case with fixed degree sequence\n");                     
-                printf("\t\t Warning: The entropy calculation will only include the terms corresponding to the binary structure \n");                       
+                printf("\t\t Warning: The surprise calculation will only include the terms corresponding to the binary structure \n");                       
                 if(opt_dir>0)
                 {
                     x2 = read_node_list_xatts_double(file_s, N_nodes, 2, header, opt_verbose); // degree lagrange sequence (double)
@@ -537,7 +538,7 @@ int main(int argc, char *argv[]){
     }   
     if((opt_entropy>0)&&(reps>10))
     {
-        printf("\t Computing entropy histogram \n");   
+        printf("\t Computing surprise histogram \n");   
     }else{
 		opt_entropy=0;   
 	}
@@ -698,7 +699,7 @@ int main(int argc, char *argv[]){
                     abort();
                 }           
             }
-            if(opt_entropy) entropy_seq[r]= w_graph_entropy_multinomial(WG,N_nodes,opt_dir); // assuming multinomial case
+            //if(opt_entropy) entropy_seq[r]= w_graph_surprise_multinomial(WG,N_nodes,opt_dir); // assuming multinomial case
         }else if(cases==1){ // custom pij
             if(meth==2)
             {
@@ -728,7 +729,7 @@ int main(int argc, char *argv[]){
                         WG = poisson_multinomial_undirected_graph(pij_flat, N_nodes, T, randgsl, opt_verbose, opt_self);
                     }
                 }
-            if(opt_entropy) entropy_seq[r]= w_graph_entropy_multinomial(WG,N_nodes,opt_dir); // assuming multinomial case
+            //if(opt_entropy) entropy_seq[r]= w_graph_surprise_poisson(WG,N_nodes,opt_dir); // assuming poisson case, multinomial not implemented
             }
         }else if(cases==2){ // fixed s or fixed s and C
             if(meth==2)
@@ -744,7 +745,7 @@ int main(int argc, char *argv[]){
 						}else{
 							WG = gravity_poisson_undirected_graph2(x2[0], N_nodes, dist, gamma, randgsl, opt_verbose, opt_self);
 						}
-						if(opt_entropy) entropy_seq[r]= w_graph_entropy_poisson_dist(WG,x2,N_nodes,dist,gamma,opt_self,opt_dir); // assuming poisson case
+						if(opt_entropy) entropy_seq[r]= w_graph_surprise_poisson_dist(WG,x2,N_nodes,dist,gamma,opt_self,opt_dir); // assuming poisson case
 					}else{
 						if(opt_dir>0)
 						{
@@ -752,7 +753,7 @@ int main(int argc, char *argv[]){
 						}else{
 							WG = fixeds_poisson_undirected_graph2(x2[0], N_nodes, randgsl, opt_verbose, opt_self);
 						}
-						if(opt_entropy) entropy_seq[r]= w_graph_entropy_poisson(WG,x2,N_nodes,opt_self,opt_dir); // assuming poisson case
+						if(opt_entropy) entropy_seq[r]= w_graph_surprise_poisson(WG,x2,N_nodes,opt_self,opt_dir); // assuming poisson case
 					}
                 }else{
                     if(layers==1) // single layer
@@ -768,7 +769,7 @@ int main(int argc, char *argv[]){
                                 //WG = fixeds_geometric_undirected_graph2(x2[0],  N_nodes , randgsl, opt_verbose, opt_self);
                                 WG = fixeds_negbinomial_undirected_graph2(x2[0], N_nodes, layers , randgsl, opt_verbose, opt_self);
                             }
-                            if(opt_entropy) entropy_seq[r]= w_graph_entropy_geometric(WG,x2,N_nodes,opt_self,opt_dir); // assuming poisson case
+                            if(opt_entropy) entropy_seq[r]= w_graph_surprise_geometric(WG,x2,N_nodes,opt_self,opt_dir); // assuming poisson case
                         }else{ // binary
                             printf("Cannot fix the strength sequence of a binary network, use case 5 instead. Aborting... \n");
                             abort();
@@ -783,7 +784,7 @@ int main(int argc, char *argv[]){
                             }else{
                                 WG = fixeds_negbinomial_undirected_graph2(x2[0], N_nodes, layers , randgsl, opt_verbose, opt_self);
                             }
-                            if(opt_entropy) entropy_seq[r]= w_graph_entropy_negbinomial(WG,x2,N_nodes,layers,opt_self,opt_dir); // assuming poisson case
+                            if(opt_entropy) entropy_seq[r]= w_graph_surprise_negbinomial(WG,x2,N_nodes,layers,opt_self,opt_dir); // assuming poisson case
                         }else{ // binomial
                             if(opt_verbose==1) printf("============### Binomial model ####===========\n"); fflush(stdout);
                             if(opt_dir>0)
@@ -792,7 +793,7 @@ int main(int argc, char *argv[]){
                             }else{
                                 WG = fixeds_binomial_undirected_graph2(x2[0], N_nodes, layers, randgsl, opt_verbose, opt_self);
                             }
-                            if(opt_entropy) entropy_seq[r]= w_graph_entropy_binomial(WG,x2,N_nodes,layers,opt_self,opt_dir); // assuming poisson case
+                            if(opt_entropy) entropy_seq[r]= w_graph_surprise_binomial(WG,x2,N_nodes,layers,opt_self,opt_dir); // assuming poisson case
                         }
                     }
                 }
@@ -817,7 +818,7 @@ int main(int argc, char *argv[]){
                             WG = poisson_multinomial_undirected_graph(ps[0], N_nodes, T, randgsl, opt_verbose, opt_self);
                         }
                     }
-                    if(opt_entropy) entropy_seq[r]= w_graph_entropy_multinomial(WG,N_nodes,opt_dir); // assuming poisson case
+                    //if(opt_entropy) entropy_seq[r]= w_graph_surprise_multinomial(WG,N_nodes,opt_dir); // assuming poisson case
                 }else{
                     printf("If indist or agg set to True, only available method is Grand-Canonical. Aborting... \n");
                     abort();
@@ -831,7 +832,7 @@ int main(int argc, char *argv[]){
             }else{
                 WG = fixedEs_poisson_undirected_graph(x2[0], N_nodes, gamma, randgsl, opt_verbose, opt_self, max_reps);
             }
-            if(opt_entropy) entropy_seq[r] = w_graph_entropy_ZIP(WG, x2, N_nodes, gamma, opt_self, opt_dir);
+            if(opt_entropy) entropy_seq[r] = w_graph_surprise_ZIP(WG, x2, N_nodes, gamma, opt_self, opt_dir);
         }else if(cases==4){ // fixed s and k
             if(opt_agg<=0)
             {
@@ -842,7 +843,7 @@ int main(int argc, char *argv[]){
                 }else{
                     WG = fixedks_poisson_undirected_graph(x2, N_nodes, randgsl, opt_verbose, opt_self, max_reps);
                 }
-                if(opt_entropy) entropy_seq[r] = w_graph_entropy_ZIP2(WG, x2, N_nodes, opt_self, opt_dir);
+                if(opt_entropy) entropy_seq[r] = w_graph_surprise_ZIP2(WG, x2, N_nodes, opt_self, opt_dir);
             }else{
                 if(layers>1)
                 {
@@ -853,7 +854,7 @@ int main(int argc, char *argv[]){
                     }else{
                         WG = fixedks_binomial_undirected_graph(x2, N_nodes, layers, randgsl, opt_verbose, opt_self, max_reps);
                     }
-                    if(opt_entropy) entropy_seq[r] = w_graph_entropy_ZIB2(WG, x2, N_nodes, layers, opt_self, opt_dir);                  
+                    if(opt_entropy) entropy_seq[r] = w_graph_surprise_ZIB2(WG, x2, N_nodes, layers, opt_self, opt_dir);                  
                 }else{
                     printf("Cannot fix the strength and degree sequence of a single binary network, use case 5 instead. Aborting... \n");
                     abort();
@@ -917,7 +918,7 @@ int main(int argc, char *argv[]){
                     }                   
                 }
             }
-            if(opt_entropy) entropy_seq[r] = w_graph_entropy_bernouilli(WG, x2, N_nodes, opt_self, opt_dir); // not counting additional constant terms                  
+            if(opt_entropy) entropy_seq[r] = w_graph_surprise_bernouilli(WG, x2, N_nodes, opt_self, opt_dir); // not counting additional constant terms                  
         }
 
         if(r==0) // if first rep, store all stats

@@ -25,8 +25,9 @@ W_GRAPH* w_graph_read_edge_list(char *input_name, int N_nodes, int opt_dir, int 
 	i=j=tij=0;
 	int k=0;
 	int g;
-	int opt_self;
+	int opt_self, selfs;
 	opt_self = 0;
+	selfs = 0;
 	char dummy[100];
 	while(k<header)
 	{
@@ -53,7 +54,11 @@ W_GRAPH* w_graph_read_edge_list(char *input_name, int N_nodes, int opt_dir, int 
 				}else{
 					w_graph_add_multi_link_undirected(WG, N_nodes, i, j, tij);
 				}
-				if(i==j) opt_self = 1; // self_loop flag
+				if(i==j)
+				{
+					 opt_self = 1; // self_loop flag
+					 selfs ++;
+				 }
 			}
 			n+=tij;
 			E++;
@@ -62,7 +67,7 @@ W_GRAPH* w_graph_read_edge_list(char *input_name, int N_nodes, int opt_dir, int 
 	if(verbose>0) printf(" -- Total num of trips %i \t Total number of edges:%d. Selfloops? %d\n",n,E,opt_self);
 	fclose(input);
 	WG->opt_dir = opt_dir;
-	WG->opt_self = 0;
+	WG->opt_self = opt_self;
 	return WG;
 }
 
@@ -248,8 +253,22 @@ void w_graph_print_adj_list(W_GRAPH* WG, int N_nodes, char* output){
     return;
 }
 /****************************************************************************
- * S and K's *
+ * Node funcs *
  ****************************************************************************/
+
+int w_graph_nonempty_nodes(W_GRAPH* WG){// new convention including number of nodes!
+	// returns number of non empty nodes //
+	int N0_nodes,i;
+	N0_nodes = 0;
+	for(i=0;i<WG->N_nodes;i++)
+	{
+		if(WG->node[i].sout==0 || WG->node[i].sin==0)
+		{
+			N0_nodes ++;
+		}
+	}
+	return N0_nodes;
+}	
 
 int ** w_graph_compute_s(W_GRAPH* WG, int N_nodes){
     int** s=cast_mat_int(2,N_nodes);
@@ -670,10 +689,12 @@ int w_graph_total_edges( W_GRAPH* WG, int N_nodes){
 			for(j=0;j<WG->node[i].kout;j++)
 			{
 				aux2++;
+				/*
 				if(WG->node[i].out[j]==i) // if selfs count twice
 				{
 					aux2++;
 				}
+				*/
 			}
 		}
 		WG->E = aux2;
@@ -690,7 +711,8 @@ int w_graph_total_edgepairs( W_GRAPH* WG, int N_nodes){
 		L = 0;
 		if (WG->opt_self>0)
 		{
-			L = N_nodes*N_nodes+N_nodes; // we coutn self-loops twice to adapt to undirected
+			//L = N_nodes*N_nodes+N_nodes; // we coutn self-loops twice to adapt to undirected
+			L = N_nodes*N_nodes;
 		}else{
 			L = N_nodes*(N_nodes-1);
 		}
@@ -723,11 +745,13 @@ int * w_graph_compute_p(W_GRAPH* WG, int N_nodes, int* aux){
 				}
 				w[aux2] = (int)t;
 				aux2++;
+				/*
 				if(j==i) // count twice
 				{
 					w[aux2]=(int)t;
 					aux2++;
 				}
+				*/
 				//printf("Edgepair: %d. I:%d J:%d | Connection: %d Dest:%d \n",aux2,i,j,t,dest);fflush(stdout);
 			}
 		}
@@ -768,11 +792,13 @@ int * w_graph_compute_w(W_GRAPH* WG, int N_nodes, int* aux, int zeros){
 					}
 					w[aux2] = (int)t;
 					aux2++;
+					/*
 					if(j==i) // count twice
 					{
 						w[aux2]=(int)t;
 						aux2++;
 					}
+					*/
 					//printf("Edgepair: %d. I:%d J:%d | Connection: %d Dest:%d \n",aux2,i,j,t,dest);fflush(stdout);
 				}
 			}
@@ -794,6 +820,7 @@ int * w_graph_compute_w(W_GRAPH* WG, int N_nodes, int* aux, int zeros){
                 }
                 w[aux2]=(int)WG->node[i].w_out[j];
                 aux2++;
+                /*
                 if(WG->node[i].out[j]==i)
                 {
                     if(aux2+1>mem)
@@ -804,6 +831,7 @@ int * w_graph_compute_w(W_GRAPH* WG, int N_nodes, int* aux, int zeros){
                     w[aux2]=(int)WG->node[i].w_out[j];
                     aux2++;
                 }
+                */
                 
             }
         }
@@ -953,6 +981,7 @@ double * w_graph_compute_wp_ss(W_GRAPH* WG, int N_nodes, int weight){
                 ww[aux]=((double)WG->node[i].kout)*((double)WG->node[WG->node[i].out[j]].kin);
             }
             aux++;
+            /*
             if(WG->node[i].out[j]==i) // if self loop, count twice
             {
                 if (weight>0)
@@ -963,6 +992,7 @@ double * w_graph_compute_wp_ss(W_GRAPH* WG, int N_nodes, int weight){
                 }
                 aux++;
             }
+            */
         }
     }
     assert(aux==E);
@@ -990,6 +1020,7 @@ double * w_graph_compute_w_ss(W_GRAPH* WG, int N_nodes, int weight){
 					ww[aux]=((double)WG->node[i].kout)*((double)WG->node[j].kin);
 				}
 				aux++;
+				/*
 				if(i==j)
 				{
 					if (weight>0)
@@ -1000,6 +1031,7 @@ double * w_graph_compute_w_ss(W_GRAPH* WG, int N_nodes, int weight){
 					}
 					aux++;
 				}
+				*/
             }
         }
     }
@@ -1066,9 +1098,10 @@ double ** w_graph_compute_Y2(W_GRAPH * WG, int N_nodes, int opt_dir){
 }
 
 /****************************************************************************
- * Entropy *
+ * Entropy / surprise *
  ****************************************************************************/
-double w_graph_entropy_multinomial(W_GRAPH* WG, int N_nodes, int opt_dir){ // not entirely correct (esactly)... but...
+double w_graph_ML_ensemble_entropy_multinomial(W_GRAPH* WG, int N_nodes, int opt_dir){
+	// computes Max Likelyhood ensemble entropy multinomial from a given sample //
 	double S,p;
 	int i,j,t;
 	int T = w_graph_total_weight(WG,N_nodes);
@@ -1087,7 +1120,8 @@ double w_graph_entropy_multinomial(W_GRAPH* WG, int N_nodes, int opt_dir){ // no
 }
 
 
-double w_graph_entropy_poisson(W_GRAPH* WG, double** x,int N_nodes, int opt_self, int opt_dir){
+double w_graph_surprise_poisson(W_GRAPH* WG, double** x,int N_nodes, int opt_self, int opt_dir){
+	// computes graph surprise from given poisson model
 	double S,p,mu;
 	int i,j,t;
     double *y;
@@ -1123,7 +1157,7 @@ double w_graph_entropy_poisson(W_GRAPH* WG, double** x,int N_nodes, int opt_self
 					p = 1./0.; // infinity! (not compatible)
 					if(t==0) p = 0;
 				}
-				if(p>0) S+= p*log(p);
+				if(p>0) S+= log(p);
 			}
         }
 	}
@@ -1132,7 +1166,8 @@ double w_graph_entropy_poisson(W_GRAPH* WG, double** x,int N_nodes, int opt_self
 }
 
 
-double w_graph_entropy_geometric(W_GRAPH* WG, double**x, int N_nodes, int opt_self, int opt_dir){
+double w_graph_surprise_geometric(W_GRAPH* WG, double**x, int N_nodes, int opt_self, int opt_dir){
+	// computes graph surprise from given geometric model
 	double S,p,mu;
 	int i,j,t;
     double *y;
@@ -1168,7 +1203,7 @@ double w_graph_entropy_geometric(W_GRAPH* WG, double**x, int N_nodes, int opt_se
 					p = 1./0.; // infinity! (not compatible)
 					if(t==0) p = 0;
 				}
-				if(p>0) S+= p*log(p);
+				if(p>0) S+= log(p);
 			}
         }
 	}
@@ -1176,7 +1211,8 @@ double w_graph_entropy_geometric(W_GRAPH* WG, double**x, int N_nodes, int opt_se
 	return -S;    
 }
 
-double w_graph_entropy_binomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir){
+double w_graph_surprise_binomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir){
+	// computes graph surprise from given binomial model
 	double S,p,mu;
 	int i,j,t;
     double *y;
@@ -1212,7 +1248,7 @@ double w_graph_entropy_binomial(W_GRAPH* WG, double**x, int N_nodes, int layers,
 					p = 1./0.; // infinity! (not compatible)
 					if(t==0) p = 0;
 				}
-				if(p>0) S+= p*log(p);
+				if(p>0) S+= log(p);
 			}
         }
 	}
@@ -1220,7 +1256,8 @@ double w_graph_entropy_binomial(W_GRAPH* WG, double**x, int N_nodes, int layers,
 	return -S;    
 }
 
-double w_graph_entropy_negbinomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir){
+double w_graph_surprise_negbinomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir){
+	// computes graph surprise from given negbinomial model
 	double S,p,mu;
 	int i,j,t;
     double *y;
@@ -1256,14 +1293,15 @@ double w_graph_entropy_negbinomial(W_GRAPH* WG, double**x, int N_nodes, int laye
 					p = 1./0.; // infinity! (not compatible)
 					if(t==0) p = 0;
 				}
-				if(p>0) S+= p*log(p);
+				if(p>0) S+= log(p);
 			}
         }
 	}
 	if(opt_dir<=0) S = S/2.;
 	return -S;    
 }
-double w_graph_entropy_bernouilli(W_GRAPH* WG, double** x, int N_nodes, int opt_self, int opt_dir){
+double w_graph_surprise_bernouilli(W_GRAPH* WG, double** x, int N_nodes, int opt_self, int opt_dir){
+	// computes graph surprise from given bernouilli model
 	double S,p,mu;
 	int i,j,t;
     double *y;
@@ -1299,7 +1337,7 @@ double w_graph_entropy_bernouilli(W_GRAPH* WG, double** x, int N_nodes, int opt_
 					p = 1./0.; // infinity! (not compatible)
 					if(t==0) p = 0;
 				}
-				if(p>0) S+= p*log(p);
+				if(p>0) S+= log(p);
 			}
         }
 	}
@@ -1308,7 +1346,8 @@ double w_graph_entropy_bernouilli(W_GRAPH* WG, double** x, int N_nodes, int opt_
 }
 
 
-double w_graph_entropy_ZIP(W_GRAPH* WG, double** x, int N_nodes, double gamma, int opt_self, int opt_dir){
+double w_graph_surprise_ZIP(W_GRAPH* WG, double** x, int N_nodes, double gamma, int opt_self, int opt_dir){
+	// computes graph surprise from given ZIP model
 	double S,p;
 	int i,j,t,dest;
     double *y;
@@ -1338,7 +1377,7 @@ double w_graph_entropy_ZIP(W_GRAPH* WG, double** x, int N_nodes, double gamma, i
                     p = 1 - gamma*(exp(y[i]*yy[j])-1)/(gamma*(exp(y[i]*yy[j])-1)+1);
 				}
             }		
-		    S+= p*log(p);
+		    S+= log(p);
         }
 	}
 	if(opt_dir<0) S =S/2.;
@@ -1347,7 +1386,8 @@ double w_graph_entropy_ZIP(W_GRAPH* WG, double** x, int N_nodes, double gamma, i
 
 
 
-double w_graph_entropy_ZIP2(W_GRAPH* WG, double** x,int N_nodes,  int opt_self, int opt_dir){
+double w_graph_surprise_ZIP2(W_GRAPH* WG, double** x,int N_nodes,  int opt_self, int opt_dir){
+	// computes graph surprise from given ZIP2 (custom averages) model
 	double S,p;
 	int i,j,t,dest;
     double *y;
@@ -1383,7 +1423,7 @@ double w_graph_entropy_ZIP2(W_GRAPH* WG, double** x,int N_nodes,  int opt_self, 
                     p = 1 - z[i]*zz[j]*(exp(y[i]*yy[j])-1)/(z[i]*zz[j]*(exp(y[i]*yy[j])-1)+1);
 				}
             }		
-		    S+= p*log(p);
+		    S+= log(p);
         }
 	}
 	if(opt_dir<0) S =S/2.;
@@ -1391,7 +1431,8 @@ double w_graph_entropy_ZIP2(W_GRAPH* WG, double** x,int N_nodes,  int opt_self, 
 }
 
 
-double w_graph_entropy_ZIB2(W_GRAPH* WG, double** x, int N_nodes, int layers, int opt_self, int opt_dir){
+double w_graph_surprise_ZIB2(W_GRAPH* WG, double** x, int N_nodes, int layers, int opt_self, int opt_dir){
+	// computes graph surprise from given ZIB2 model
 	double S,p;
 	int i,j,t,dest;
     double *y;
@@ -1427,7 +1468,7 @@ double w_graph_entropy_ZIB2(W_GRAPH* WG, double** x, int N_nodes, int layers, in
                     p = 1 - z[i]*zz[j]*(pow(1+y[i]*yy[j],layers)-1)/(z[i]*zz[j]*(pow(1+y[i]*yy[j],layers)-1)+1);
 				}
             }		
-		    S+= p*log(p);
+		    S+= log(p);
         }
 	}
 	if(opt_dir<0) S =S/2.;
@@ -2015,17 +2056,17 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, int op
     
     gsl_histogram* h1;
     
-    double* sout;
     double* xranges;
     int xbins;
     double** yy;
+    double* sout;
     
     /// w histogram /////
-    sout=vec_int_to_double(w,E);
+    //sout=vec_int_to_double(w,E);    
     int q=max_value_int(w,E);
     if(verbose>0) printf("\t Max weight: %d | av existing weight: %.3f+-%.3f \n",q,mean_vec_int(w, E),sqrt(var_vec_int(w, E)));
-    h1=histogram_double(sout,0,q,q,E);
-    free(sout);
+    h1=histogram_int2(w,0,q,E);
+    //free(sout);
     //sprintf(cadena,"run_%dN%d_w.hist",run,N_nodes);
 	if(opt_dir>0)
 	{
@@ -2536,10 +2577,10 @@ double** w_graph_to_adj_matrix(W_GRAPH* WG, int N_nodes){
  ****************************************************************************/
 W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, double gamma, int mode, int M, int verbose){
     // filters graph if t in in confidence bounds according to C.I gamma //
-    if(verbose>0) printf("... Filtering graph with alpha=%.3f | mode:%d...\n",gamma,mode);
+    if(verbose>0) printf("... Filtering graph with alpha=%.5f | mode:%d...\n",gamma,mode);
 	int i,j;
     int id_node;
-    double mu;
+    double mu,av_alfa,alfa_fake;
     int t;
     int tot = 0;
     int etot = 0;
@@ -2555,6 +2596,8 @@ W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, doub
     }
     double T = (double)w_graph_total_weight(WG, N_nodes);
     double E = (double)w_graph_total_edges(WG, N_nodes);
+    av_alfa = 0;
+    alfa_fake = 0 ;
 	for(i=0;i<N_nodes;i++)
 	{
 		for(j=0;j<WG->node[i].kout;j++)
@@ -2562,24 +2605,22 @@ W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, doub
             id_node = WG->node[i].out[j];
             t = WG->node[i].w_out[j];
             mu = x[i]*y[id_node];
+            mu = x[i]*y[id_node];
             // if theta==1 keep, else, not keep
             if(mu<=0)
             {
                 theta = 1; // surely not in interval, keep
             }else{
-                find_tmintmax_xy(l,mu,gamma,mode,M);                
-                if((l[0]<0)&&(l[1]<0))
+                av_alfa += find_tmintmax_xy(l,mu,gamma,mode,M);                
+                alfa_fake +=1;
+                if((t>=l[0])&&(t<=l[1])) // in interval (at most with gamma% chance)
                 {
-                    theta = 0; // surely in interval, do not keep
+                    // |_1 gamma |_2 --> prob outside <1-gamma
+                    theta=0; // do not keep
                 }else{
-                    if((t>=l[0])&&(t<=l[1])) // in interval (at most with gamma% chance)
-                    {
-                        // |_1 gamma |_2 --> prob outside <1-gamma
-                        theta=0; // do not keep
-                    }else{
-                        theta=1; // keep
-                    }
+                    theta=1; // keep
                 }
+                //printf("%d %d %d %f\n",t,l[0],l[1],mu);
             }
             if(theta==1) // if not in interval, keep
             {
@@ -2590,13 +2631,19 @@ W_GRAPH* w_graph_filter_xij(W_GRAPH* WG, double* x, double* y, int N_nodes, doub
             }
         }
     }
-    if(verbose>0) printf("\tTotal number of units after filtering: events: %d (f:%.5f) | edges:%d (f:%.5f) \n",tot,(double)tot/T,etot,(double)etot/E);
+    if(verbose>0)
+    {
+	  int N0_nodes;
+	  N0_nodes = w_graph_nonempty_nodes(WGf);
+      printf("\tTotal number of units after filtering:\n\t\tEvents: %d (f:%.5f)\n\t\tEdges:%d (f:%.5f)\n\t\tNodes:%d (f:%.5f)\n",tot,(double)tot/T,etot,(double)etot/E, N0_nodes, (double)N0_nodes/N_nodes);   
+      printf("\t Average prob of rejection: %.5f\n", av_alfa/alfa_fake);
+    }
     return WGf;
 }
 
 
 
-void find_tmintmax_xy(int* tt, double xy, double gamma, int mode, int M)
+double find_tmintmax_xy(int* tt, double xy, double gamma, int mode, int M)
 {
     assert(gamma<=1);
     assert(gamma>=0);
@@ -2604,7 +2651,7 @@ void find_tmintmax_xy(int* tt, double xy, double gamma, int mode, int M)
     tt[0] = 0;
     tt[1] = 0;
     // finds T such that p(x<=T) = gamma;
-    double mu,p,P0;
+    double mu,P0,p;
     int l1,l2,k,aux,mu_i;
     int t;
     //int c;
@@ -2635,26 +2682,24 @@ void find_tmintmax_xy(int* tt, double xy, double gamma, int mode, int M)
             {
                 aux = l1;
                 l1= l1 + 1;
-                k=-k;
+                if(l2>-1)k=-1;
             }else{ // backwards
                 aux = l2;
                 l2= l2 - 1;
-                if(l2<0)
-                {
-                    k=1; // if non negative, keep positive
-                }else{
-                    k=-k;
-                }
+                k=1;
             }
             P0 += gsl_ran_poisson_pdf(aux,mu);                
+            p = gsl_ran_poisson_pdf(aux,mu);            
             //c++;
-            if((double)(l2-l1)>10*sqrt(mu)) // 10 std away!
+            /*
+            if((double)(l2-l1)>60*sqrt(mu)) // 10 std away!
             {
                 l1 = -10;
                 l2 = -10;
                 break; //break if too large
             }
-            //if(mu>100)printf("c :%d t:%d aux:%d xy:%f k:%d P0:%f Gamma:%f\n",c,t,aux,xy,k,P0,gamma);
+            */
+            //printf("min:%d max:%d t:%d aux:%d xy:%f k:%d P0:%f p:%f Gamma:%f\n",l2,l1,t,aux,mu,k,P0,p,gamma);
         }
     }else if(mode==1){
         mu = M*(xy/(1+xy));        
@@ -2679,25 +2724,22 @@ void find_tmintmax_xy(int* tt, double xy, double gamma, int mode, int M)
             if(k>0) // forward
             {
                 aux = l1;
-                l1+=1;
-                k=-k;
+                l1= l1 + 1;
+                if(l2>-1) k=-k; // if l2 non-null or negative, invert
             }else{ // backwards
                 aux = l2;
-                l2-=1;
-                if(l2<0)
-                {
-                    k=1; // if non negative, keep positive
-                }else{
-                    k=-k;
-                }
+                l2= l2 - 1;
+                k=-k;
             }
             P0 += gsl_ran_binomial_pdf(aux,p,M);
-            if(fabs(aux-mu)>10*sqrt(mu/(1+xy))) // 10 std away!
+            /*
+            if(fabs(aux-mu)>60*sqrt(mu/(1+xy))) // 10 std away!
             {
                 l1 = -10;
                 l2 = -10;
                 break; //break if too large
             }
+            */
         }
     }else{
         mu = M*xy/(1.-xy);        
@@ -2722,33 +2764,39 @@ void find_tmintmax_xy(int* tt, double xy, double gamma, int mode, int M)
             if(k>0) // forward
             {
                 aux = l1;
-                l1+=1;
-                k=-k;
+                l1= l1 + 1;
+                if(l2>-1) k=-k; // if l2 non-null or negative, invert
             }else{ // backwards
                 aux = l2;
-                l2-=1;
-                if(l2<0)
-                {
-                    k=1; // if non negative, keep positive
-                }else{
-                    k=-k;
-                }
+                l2= l2 - 1;
+                k=-k;
             }
             P0 += gsl_ran_negative_binomial_pdf(aux,p,M); 
+            /*
             // --> think about this! p(k) = {\Gamma(n + k) \over \Gamma(k+1) \Gamma(n) } p^n (1-p)^k
-            if(fabs(aux-mu)>10*sqrt(mu/p)) // 10 std away!
+            if(fabs(aux-mu)>60*sqrt(mu/p)) // 10 std away!
             {
                 l1 = -10;
                 l2 = -10;
                 break; //break if too large
             }
+            */
         }
     }
 	//printf("mu:%f t:%d xy:%f k:%d aux:%d l1:%d l2:%d P0:%f Gamma:%f\n",mu,t,xy,k,aux,l1,l2,P0,gamma);
     //printf("FInal values: %d %d %f\n",tt[0]-l2,tt[1]+l1,mu);
+    
+    /*
     tt[0] = l2;
     if(l2==-1) tt[0]=0;
     tt[1] = l1;
     if(l1==-1) tt[1]=0;
-    return;
+    */
+    assert(l2>=-1);
+    if(l2==-1) l2 = 0;
+    assert(l1>=0);
+    assert(l2<=l1);
+    tt[0] = l2;
+    tt[1] = l1;
+    return P0;
 }

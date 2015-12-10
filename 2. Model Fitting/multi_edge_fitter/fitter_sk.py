@@ -74,6 +74,7 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
                 act: Print error every act steps (if print_c is set to True)
                 alf: Reduction factor on variables (by default max(xy))
     """
+
     ## add precision ##
     sout = np.array(sout,dtype=np.float128)
     kout = np.array(kout,dtype=np.float128)
@@ -141,57 +142,60 @@ def balance_xyzw(sin,sout,kin,kout,tol=1e-9,tol_c=10,maxreps=10000,verbose=False
     if print_c:
         print "## Errors: \t\t\t\t || Convergence: ##"
         print "-----------------------------------------------------------"
-    while True:
-        ### balancing ####
-        aux  = aux_f(a,b,alf,M)
-        aux2 = np.einsum('i,j',c,d)
-        #strengths
-        #b = sin*(alf*alf)/M/(d*np.einsum('i,ij',a*c,aux/corr(a,b,alf)/(aux2*(aux-1.)+1.)) - extra_s(a,b,c,d,aux,aux2,corr(a,b,alf))/b)
-        b = sin*(alf*alf)/M/(d*np.einsum('i,ij',a*c,1./corr(a,b,alf)/(aux2*(1.-aux)+aux)) - extra_s(a,b,c,d,aux,aux2,corr(a,b,alf))/b)
-        b[inds_in]=0
-        aux  = aux_f(a,b,alf,M)
-        #a = sout*(alf*alf)/M/(c*np.einsum('j,ij',b*d,aux/corr(a,b,alf)/(aux2*(aux-1.)+1.)) - extra_s(a,b,c,d,aux,aux2,corr(a,b,alf))/a)
-        a = sout*(alf*alf)/M/(c*np.einsum('j,ij',b*d,1./corr(a,b,alf)/(aux2*(1.-aux)+aux)) - extra_s(a,b,c,d,aux,aux2,corr(a,b,alf))/a)
-        a[inds_out]=0
-        aux  = aux_f(a,b,alf,M)
-        #degrees
-        #d = kin/( np.einsum('i,ij',c,(aux-1.)/(aux2*(aux-1.)+1.)) - extra_k(c,d,aux,aux2)/d)
-        d = kin/( np.einsum('i,ij',c,(1.-aux)/(aux2*(1.-aux)+aux)) - extra_k(c,d,aux,aux2)/d)
-        d[inds_in]=0                                              
-        aux2 = np.einsum('i,j',c,d)                               
-        #c = kout/( np.einsum('j,ij',d,(aux-1.)/(aux2*(aux-1.)+1.)) - extra_k(c,d,aux,aux2)/c)
-        c = kout/( np.einsum('j,ij',d,(1.-aux)/(aux2*(1.-aux)+aux)) - extra_k(c,d,aux,aux2)/c)
-        c[inds_out]=0
-        aux2 = np.einsum('i,j',c,d)
-        ### checking convergence ####               
-        tola = np.max(np.abs(afake-a))
-        tolb = np.max(np.abs(bfake-b))
-        tolc = np.max(np.abs(cfake-c))
-        told = np.max(np.abs(dfake-d))
-        if print_tol:
-            print "Delta_x:%r Delta_y:%r Delta_z:%r Delta_w:%r" % (tola,tolb,tolc,told)
-        if print_c and reps%act==0:
-            da,db = dist_check_s(a/alf,b/alf,c,d,sout,sin,selfs,agg,M)
-            dc,dd = dist_check_k(a/alf,b/alf,c,d,kout,kin,selfs,agg,M)
-            if np.abs(da) < tol_c and np.abs(dc) < tol_c:
+    try:
+        while True:
+            ### balancing ####
+            aux  = aux_f(a,b,alf,M)
+            aux2 = np.einsum('i,j',c,d)
+            #strengths
+            #a = sout*(alf*alf)/M/(c*np.einsum('j,ij',b*d,aux/corr(a,b,alf)/(aux2*(aux-1.)+1.)) - extra_s(a,b,c,d,aux,aux2,corr(a,b,alf))/a)
+            a = sout*(alf*alf)/M/(c*np.einsum('j,ij',b*d,1./corr(a,b,alf)/(aux2*(1.-aux)+aux)) - extra_s(a,b,c,d,aux,aux2,corr(a,b,alf))/a)
+            a[inds_out]=0
+            aux  = aux_f(a,b,alf,M)
+            #b = sin*(alf*alf)/M/(d*np.einsum('i,ij',a*c,aux/corr(a,b,alf)/(aux2*(aux-1.)+1.)) - extra_s(a,b,c,d,aux,aux2,corr(a,b,alf))/b)
+            b = sin*(alf*alf)/M/(d*np.einsum('i,ij',a*c,1./corr(a,b,alf)/(aux2*(1.-aux)+aux)) - extra_s(a,b,c,d,aux,aux2,corr(a,b,alf))/b)
+            b[inds_in]=0
+            aux  = aux_f(a,b,alf,M)
+            #degrees
+            #d = kin/( np.einsum('i,ij',c,(aux-1.)/(aux2*(aux-1.)+1.)) - extra_k(c,d,aux,aux2)/d)
+            d = kin/( np.einsum('i,ij',c,(1.-aux)/(aux2*(1.-aux)+aux)) - extra_k(c,d,aux,aux2)/d)
+            d[inds_in]=0                                              
+            aux2 = np.einsum('i,j',c,d)                               
+            #c = kout/( np.einsum('j,ij',d,(aux-1.)/(aux2*(aux-1.)+1.)) - extra_k(c,d,aux,aux2)/c)
+            c = kout/( np.einsum('j,ij',d,(1.-aux)/(aux2*(1.-aux)+aux)) - extra_k(c,d,aux,aux2)/c)
+            c[inds_out]=0
+            aux2 = np.einsum('i,j',c,d)
+            ### checking convergence ####               
+            tola = np.max(np.abs(afake-a))
+            tolb = np.max(np.abs(bfake-b))
+            tolc = np.max(np.abs(cfake-c))
+            told = np.max(np.abs(dfake-d))
+            if print_tol:
+                print "Delta_x:%r Delta_y:%r Delta_z:%r Delta_w:%r" % (tola,tolb,tolc,told)
+            if print_c and reps%act==0:
+                da,db = dist_check_s(a/alf,b/alf,c,d,sout,sin,selfs,agg,M)
+                dc,dd = dist_check_k(a/alf,b/alf,c,d,kout,kin,selfs,agg,M)
+                if np.abs(da) < tol_c and np.abs(dc) < tol_c:
+                    if verbose:
+                        print "took %d reps, tola :%f, tolb:%f, tolc :%f, told:%f" % (reps,tola,tolb,tolc,told)
+                    break
+                print "s:%r k:%r || Delta_x:%r Delta_y:%r Delta_z:%r Delta_w:%r" % (da,dd,tola,tolb,tolc,told)
+            if  (tolb< tol and tola<tol) and (tolc<tol and told<tol):
                 if verbose:
                     print "took %d reps, tola :%f, tolb:%f, tolc :%f, told:%f" % (reps,tola,tolb,tolc,told)
+                break                
+            if reps>maxreps:
+                print "Algorithm did not converge after %d reps" % maxreps
                 break
-            print "s:%r k:%r || Delta_x:%r Delta_y:%r Delta_z:%r Delta_w:%r" % (da,dd,tola,tolb,tolc,told)
-        if  (tolb< tol and tola<tol) and (tolc<tol and told<tol):
-            if verbose:
-                print "took %d reps, tola :%f, tolb:%f, tolc :%f, told:%f" % (reps,tola,tolb,tolc,told)
-            break                
-        if reps>maxreps:
-            print "Algorithm did not converge after %d reps" % maxreps
-            break
-        if not all(np.isfinite(a)) or not all(np.isfinite(b)) or not all(np.isfinite(c)) or not all(np.isfinite(d)) or np.max([a,b,c,d])>1e100:
-            raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
-        afake = a
-        bfake = b
-        cfake = c
-        dfake = d
-        reps +=1
+            if not all(np.isfinite(a)) or not all(np.isfinite(b)) or not all(np.isfinite(c)) or not all(np.isfinite(d)) or np.max([a,b,c,d])>1e100:
+                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
+            afake = a
+            bfake = b
+            cfake = c
+            dfake = d
+            reps +=1
+    except KeyboardInterrupt:
+        pass
     return a/alf,b/alf,c,d
 
 
@@ -239,41 +243,44 @@ def balance_zw(x,y,kin,kout,tol=1e-9,tol_c=1e-7,maxreps=10000,verbose=False,self
     extra_k,extra_s = extra_selector(selfs)
     aux_f = aux_selector(agg)[0]
     aux = aux_f(x,y,alf,M)
-    while True:
-        ### balancing ####
-        aux2 = np.einsum('i,j',c,d)
-        #degrees
-        #d = kin/( np.einsum('i,ij',c,(aux-1.)/(aux2*(aux-1.)+1.)) - extra_k(c,d,aux,aux2)/d)
-        d = kin/( np.einsum('i,ij',c,(1.-aux)/(aux2*(1.-aux)+aux)) - extra_k(c,d,aux,aux2)/d)
-        d[inds_in]=0                                              
-        aux2 = np.einsum('i,j',c,d)                               
-        #c = kout/( np.einsum('j,ij',d,(aux-1)/(aux2*(aux-1)+1)) - extra_k(c,d,aux,aux2)/c)
-        c = kout/( np.einsum('j,ij',d,(1.-aux)/(aux2*(1.-aux)+aux)) - extra_k(c,d,aux,aux2)/c)
-        c[inds_out]=0       
-        ### checking convergence ####               
-        tolc = np.max(np.abs(cfake-c))
-        told = np.max(np.abs(dfake-d))        
-        if print_tol:
-            print "Delta_z:%r Delta_w:%r" % (tolc,told)
-        if print_c and reps%act==0:
-            dc,dd = dist_check_k(x,y,c,d,kout,kin,selfs,agg,M)
-            if np.abs(dc) < tol_c:
+    try:
+        while True:
+            ### balancing ####
+            aux2 = np.einsum('i,j',c,d)
+            #degrees
+            #d = kin/( np.einsum('i,ij',c,(aux-1.)/(aux2*(aux-1.)+1.)) - extra_k(c,d,aux,aux2)/d)
+            d = kin/( np.einsum('i,ij',c,(1.-aux)/(aux2*(1.-aux)+aux)) - extra_k(c,d,aux,aux2)/d)
+            d[inds_in]=0                                              
+            aux2 = np.einsum('i,j',c,d)                               
+            #c = kout/( np.einsum('j,ij',d,(aux-1)/(aux2*(aux-1)+1)) - extra_k(c,d,aux,aux2)/c)
+            c = kout/( np.einsum('j,ij',d,(1.-aux)/(aux2*(1.-aux)+aux)) - extra_k(c,d,aux,aux2)/c)
+            c[inds_out]=0       
+            ### checking convergence ####               
+            tolc = np.max(np.abs(cfake-c))
+            told = np.max(np.abs(dfake-d))        
+            if print_tol:
+                print "Delta_z:%r Delta_w:%r" % (tolc,told)
+            if print_c and reps%act==0:
+                dc,dd = dist_check_k(x,y,c,d,kout,kin,selfs,agg,M)
+                if np.abs(dc) < tol_c:
+                    if verbose:
+                        print "took %d reps, tolc :%f, told:%f" % (reps,tolc,told)
+                    break
+                print "k:%r || Delta_z:%r Delta_w:%r" % (dd,tolc,told)
+            if (tolc<tol and told<tol):
                 if verbose:
                     print "took %d reps, tolc :%f, told:%f" % (reps,tolc,told)
+                break                
+            if reps>maxreps:
+                print "Algorithm did not converge after %d reps" % maxreps
                 break
-            print "k:%r || Delta_z:%r Delta_w:%r" % (dd,tolc,told)
-        if (tolc<tol and told<tol):
-            if verbose:
-                print "took %d reps, tolc :%f, told:%f" % (reps,tolc,told)
-            break                
-        if reps>maxreps:
-            print "Algorithm did not converge after %d reps" % maxreps
-            break
-        if not all(np.isfinite(c)) or not all(np.isfinite(d)):
-            raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
-        cfake = c
-        dfake = d
-        reps +=1
+            if not all(np.isfinite(c)) or not all(np.isfinite(d)):
+                raise ValueError("Something is wrong, algorithm did not converge. Check constraints or change method")
+            cfake = c
+            dfake = d
+            reps +=1
+    except KeyboardInterrupt:
+        pass
     return c,d
 
 
