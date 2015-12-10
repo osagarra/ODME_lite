@@ -58,6 +58,7 @@ double * w_graph_compute_w_ss(W_GRAPH* WG, int N_nodes, int weight);
 //double ** w_graph_compute_dists(W_GRAPH* WG, int N_nodes);
 /*******  Entropies *****/
 double w_graph_ML_ensemble_entropy_multinomial(W_GRAPH* WG, int N_nodes, int opt_dir);
+double w_graph_surprise_poisson_pij(W_GRAPH* WG,int N_nodes, double** pij, int opt_self, int opt_dir);
 double w_graph_surprise_poisson(W_GRAPH* WG, double** x,int N_nodes, int opt_self, int opt_dir);
 double w_graph_surprise_geometric(W_GRAPH* WG, double**x, int N_nodes, int opt_self, int opt_dir);
 double w_graph_surprise_binomial(W_GRAPH* WG, double**x, int N_nodes, int layers, int opt_self, int opt_dir);

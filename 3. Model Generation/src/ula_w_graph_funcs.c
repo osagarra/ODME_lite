@@ -1165,6 +1165,42 @@ double w_graph_surprise_poisson(W_GRAPH* WG, double** x,int N_nodes, int opt_sel
 	return -S;    
 }
 
+double w_graph_surprise_poisson_pij(W_GRAPH* WG,int N_nodes, double** pij, int opt_self, int opt_dir){
+	// computes graph surprise from given poisson model
+	double S,p,mu;
+	int i,j,t;
+	S = 0;
+	for(i=0;i<N_nodes;i++) // all edges
+	{
+		for(j=0;j<N_nodes;j++)
+		{
+            if((opt_self>0)||(i!=j))
+            {
+                t=find_value_int(WG->node[i].out, j, WG->node[i].kout); // check if link exists
+                if(t>=0)
+                {
+					t = WG->node[i].w_out[t];
+				}else{
+					t = 0;
+				}
+                mu = pij[i][j];
+                if(mu>0)
+				{
+					p = gsl_ran_poisson_pdf (t, mu);
+					//printf("Mu:%f p:%f t:%d",mu,p,t);fflush(stdout);
+				}else{
+					p = 1./0.; // infinity! (not compatible)
+					if(t==0) p = 0;
+				}
+				if(p>0) S+= log(p);
+			}
+        }
+	}
+	if(opt_dir<=0) S = S/2.;
+	return -S;    
+}
+
+
 
 double w_graph_surprise_geometric(W_GRAPH* WG, double**x, int N_nodes, int opt_self, int opt_dir){
 	// computes graph surprise from given geometric model
@@ -2004,26 +2040,26 @@ void w_graph_node_stats_list(W_GRAPH* WG, int N_nodes, int run, int opt_dir, int
     	}
 	free_mat_double(k_anal,2);
     }else{
-	double ** k_anal=w_graph_compute_k_analitic(WG, N_nodes, self_opt);
-	if(opt_clust==1)
-	{
-	    double ** c= w_graph_compute_clust(WG, N_nodes); // 2 rows
-	    fprintf(fil,"# Node_num\tk\tk_anal\ts\tY2\tk_nn\tk^w_nn\ts^w_nn\tc\tc^w# \n");
-	    for(i=0;i<N_nodes;i++)
-	    {
-        	fprintf(fil,"%d %d %.3f %d %f %f %f %f %f %f\n",i,k[0][i],k_anal[0][i],s[0][i],y2[0][i],kk_n[0][i],
-			kkw_n[0][i],ss_n[0][i],c[0][i],c[1][i]);
-	    }
-	    free_mat_double(c,2);
-	}else{
-	    fprintf(fil,"# Node_num\tk\tk_anal\ts\tY2\tk_nn\tk^w_nn\ts^w_nn\n");
-	    for(i=0;i<N_nodes;i++)
-	    {
-        	fprintf(fil,"%d %d %.3f %d %f %f %f %f\n",i,k[0][i],k_anal[0][i],s[0][i],y2[0][i],kk_n[0][i],
-			kkw_n[0][i],ss_n[0][i]);
-	    }
-	free_mat_double(k_anal,2);
-	}
+		double ** k_anal=w_graph_compute_k_analitic(WG, N_nodes, self_opt);
+		if(opt_clust==1)
+		{
+			double ** c= w_graph_compute_clust(WG, N_nodes); // 2 rows
+			fprintf(fil,"# Node_num\tk\tk_anal\ts\tY2\tk_nn\tk^w_nn\ts^w_nn\tc\tc^w# \n");
+			for(i=0;i<N_nodes;i++)
+			{
+				fprintf(fil,"%d %d %.3f %d %f %f %f %f %f %f\n",i,k[0][i],k_anal[0][i],s[0][i],y2[0][i],kk_n[0][i],
+				kkw_n[0][i],ss_n[0][i],c[0][i],c[1][i]);
+			}
+			free_mat_double(c,2);
+		}else{
+			fprintf(fil,"# Node_num\tk\tk_anal\ts\tY2\tk_nn\tk^w_nn\ts^w_nn\n");
+			for(i=0;i<N_nodes;i++)
+			{
+				fprintf(fil,"%d %d %.3f %d %f %f %f %f\n",i,k[0][i],k_anal[0][i],s[0][i],y2[0][i],kk_n[0][i],
+				kkw_n[0][i],ss_n[0][i]);
+			}
+			free_mat_double(k_anal,2);
+		}
     }
     fclose(fil);
     free_mat_int(s,2);

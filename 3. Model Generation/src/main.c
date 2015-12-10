@@ -729,7 +729,7 @@ int main(int argc, char *argv[]){
                         WG = poisson_multinomial_undirected_graph(pij_flat, N_nodes, T, randgsl, opt_verbose, opt_self);
                     }
                 }
-            //if(opt_entropy) entropy_seq[r]= w_graph_surprise_poisson(WG,N_nodes,opt_dir); // assuming poisson case, multinomial not implemented
+            if(opt_entropy) entropy_seq[r]= w_graph_surprise_poisson_pij(WG,N_nodes,pij,opt_self, opt_dir); // assuming poisson case, multinomial not implemented
             }
         }else if(cases==2){ // fixed s or fixed s and C
             if(meth==2)
@@ -929,10 +929,10 @@ int main(int argc, char *argv[]){
             {
                 w_graph_dist_all_stats(WG, N_nodes, 0,  bin_exp, opt_dir,opt_self,dist,randgsl,dmax,opt_verbose);
             }else{
-                w_graph_all_stats(WG, N_nodes, r, bin_exp, av_k, opt_dir, opt_self, -1);
+				w_graph_all_stats(WG, N_nodes, r, bin_exp, opt_dir, opt_self, -1, opt_verbose);
             }
             if (opt_verbose>0) printf("... Node stats ... \n");
-            w_graph_node_stats_list(WG,N_nodes,0, av_k, opt_dir, opt_clust, opt_self);
+            w_graph_node_stats_list(WG,N_nodes,0, opt_dir, opt_clust, opt_self, opt_verbose);
             if(opt_print_tr==1)
             {
                 if(opt_verbose>0)printf("Printing adj matrix\n");
