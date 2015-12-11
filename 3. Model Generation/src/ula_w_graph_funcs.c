@@ -1089,6 +1089,43 @@ double * w_graph_compute_w_s(W_GRAPH* WG, int N_nodes, int weight, int direction
     return ww;
 }
 
+double * w_graph_compute_wp_s(W_GRAPH* WG, int N_nodes, int weight, int direction){
+	// computes existing weight average //
+    int E;
+    E=w_graph_total_edges(WG,N_nodes);
+    //int* ww=cast_vec_int(E);
+    double* ww=cast_vec_double(E);
+    int i,j,aux;
+    aux=0;
+    for(i=0;i<N_nodes;i++)
+    {
+        for(j=0;j<WG->node[i].kout;j++)
+        {
+			if(direction>0)
+			{
+				if (weight>0)
+				{
+					ww[aux]=((double)WG->node[i].sout);
+				}else{
+					ww[aux]=((double)WG->node[i].kout);
+				}
+			}else{
+				if (weight>0)
+				{
+					ww[aux]=(double)WG->node[WG->node[i].out[j]].sin;
+				}else{
+					ww[aux]=(double)WG->node[WG->node[i].out[j]].kin;
+				}
+			}
+			aux++;
+        }
+    }
+    assert(aux==E);
+    return ww;
+}
+
+
+
 //double ** w_graph_compute_xy(w_graph * node, int N_nodes){
     
     //int i,j;
@@ -1566,7 +1603,7 @@ double w_graph_surprise_ZIB2(W_GRAPH* WG, double** x, int N_nodes, int layers, i
 
 void w_graph_print_entropy(double* seq,int len,char* output){
 	int bins;
-	double mins,maxs,eps;
+	double mins,maxs;
 	bins = (int)len/20.;
 	if(bins<5)
 	{
@@ -2138,8 +2175,8 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, int op
 	double *wss=w_graph_compute_wp_ss(WG, N_nodes, 1);
     double *wkk=w_graph_compute_wp_ss(WG, N_nodes, -1);
     double *wss_zeros=w_graph_compute_w_ss(WG, N_nodes, 1);
-	double *ws_zeros_o = w_graph_compute_w_s(WG, N_nodes, 1, 1);
-	double *ws_zeros_i = w_graph_compute_w_s(WG, N_nodes, 1, -1);
+	double *ws_o = w_graph_compute_wp_s(WG, N_nodes, 1, 1);
+	double *ws_i = w_graph_compute_wp_s(WG, N_nodes, 1, -1);
 
     char cadena[100];
     
@@ -2259,28 +2296,28 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, int op
     free_mat_double(yy,4);  
     
     /// average weight as func of sout /////
-    sout=vec_int_to_double(w_zeros,L);
-    xranges=log_bins_double(0, max_value_double(ws_zeros_o,L) , bin_exp, &xbins);
-    yy=y_of_x(ws_zeros_o, sout, xranges,  L,  xbins);
+    sout=vec_int_to_double(w,E);
+    xranges=log_bins_double(0, max_value_double(ws_o,E) , bin_exp, &xbins);
+    yy=y_of_x(ws_o, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%d_w_s_o.hist",N_nodes);
+	    sprintf(cadena,"N%d_wp_s_o.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%d_undir_w_s_o.hist",N_nodes);
+	    sprintf(cadena,"N%d_undir_wp_s_o.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
     free(sout);
     free(xranges);
     free_mat_double(yy,4);
     /// average weight as func of sin /////
-    sout=vec_int_to_double(w_zeros,L);
-    xranges=log_bins_double(0, max_value_double(ws_zeros_i,L) , bin_exp, &xbins);
-    yy=y_of_x(ws_zeros_i, sout, xranges,  L,  xbins);
+    sout=vec_int_to_double(w,E);
+    xranges=log_bins_double(0, max_value_double(ws_i,E) , bin_exp, &xbins);
+    yy=y_of_x(ws_i, sout, xranges,  E,  xbins);
 	if(opt_dir>0)
 	{
-	    sprintf(cadena,"N%d_w_s_i.hist",N_nodes);
+	    sprintf(cadena,"N%d_wp_s_i.hist",N_nodes);
 	}else{
-	    sprintf(cadena,"N%d_undir_w_s_i.hist",N_nodes);
+	    sprintf(cadena,"N%d_undir_wp_s_i.hist",N_nodes);
 	}
     print_hist2d_mean(cadena, yy[1], yy[2], yy[0], xbins);
     free(sout);
@@ -2288,8 +2325,8 @@ void w_graph_all_stats(W_GRAPH* WG, int N_nodes, int run, double bin_exp, int op
     free_mat_double(yy,4);
     
   
-    free(ws_zeros_o);  
-    free(ws_zeros_i);  
+    free(ws_o);  
+    free(ws_i);  
 
 //// free all
     free_mat_int(s,2);

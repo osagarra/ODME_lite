@@ -55,6 +55,7 @@ double** w_graph_compute_p_w_analitic_from_s_directed(int maxt, double binn, int
 double * w_graph_compute_wp_ss(W_GRAPH* WG, int N_nodes, int weight);
 double * w_graph_compute_w_ss(W_GRAPH* WG, int N_nodes, int weight);
 double * w_graph_compute_w_s(W_GRAPH* WG, int N_nodes, int weight, int direction);
+double * w_graph_compute_wp_s(W_GRAPH* WG, int N_nodes, int weight, int direction);
 /******* Distances *****/
 //double ** w_graph_compute_dists(W_GRAPH* WG, int N_nodes);
 /*******  Entropies *****/

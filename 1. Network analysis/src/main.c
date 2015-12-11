@@ -293,11 +293,10 @@ int main(int argc, char *argv[]){
 	if (verbose>0) printf("-- wmax for histogram: %d\n",w_max);
 	/// extended stats with distance ////
 	if (verbose>0) printf("... Graph stats ... \n");
+	w_graph_all_stats(WG, N_nodes, 0, bin_exp, opt_dir, self_opt, 0, verbose);
 	if (opt_dist>0)
 	{
 		w_graph_dist_all_stats(WG, N_nodes, 0,  bin_exp, opt_dir, self_opt,dist,randgsl,dmax, verbose);
-	}else{
-		w_graph_all_stats(WG, N_nodes, 0, bin_exp, opt_dir, self_opt, 0, verbose);
 	}
 	if (verbose>0) printf("... Node stats ... \n");
 	w_graph_node_stats_list(WG,N_nodes,0, opt_dir, opt_clust, self_opt, verbose);
