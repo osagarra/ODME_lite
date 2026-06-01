@@ -1,3 +1,26 @@
+# ⚠️ ODME_lite is discontinued
+
+**ODME_lite is preserved only for historical reproducibility.**
+
+This repository contains the legacy code referenced in the printed thesis and
+related papers. It is no longer maintained and should not be used for new
+scientific or software work.
+
+ODME_lite has been modernized and renamed **MENoBiS**:
+
+- New library repository: <https://github.com/uladribia/menobis>
+- Public documentation: <https://uladribia.github.io/menobis/>
+- Current public release: **MENoBiS 1.0.0**
+
+MENoBiS is the active Rust + Python implementation for non-binary
+maximum-entropy network ensembles, filtering, sampling, and network-magnitude
+checks.
+
+The legacy ODME_lite code below remains available so old thesis/paper
+references, historical scripts, and archived analyses can still be inspected.
+
+---
+
 Origin-Destination Multi-Edge Package.
 ========================================================================
 
